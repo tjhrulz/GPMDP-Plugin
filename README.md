@@ -1,5 +1,7 @@
-#A WIP plguin for Rainmeter being built for my Monstercat Suite documentation for other skins and examples will come once functionality is finished
+#A WIP plguin for Rainmeter that is an enhanced version of the nowPlaying plugin that comes with rainmeter
+This is being built for my Monstercat Suite documentation for other skins and examples will come once functionality is finished  
 Current state - unfinished pseudocode
+
 #Planned Features
 Duplication of the NowPlaying plugin  
 Support for GPMDP  

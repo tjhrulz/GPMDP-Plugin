@@ -7,6 +7,7 @@ namespace BetterMusicPlugin
 {
     public static class Plugin
     {
+        //To add a new player add the name here and add the function to handle its info and a call for its info in the Update functions loop
         private static String[] allSupportedPlayers = { "AIMP", "CAD", "iTunes", "MediaMonkey", "Winamp", "WMP", "Spotify", "GPMDP", "Soundnode", "ChromeMusicInfoXposed" };
         private static musicInfo[] latestInfo;
 
@@ -36,9 +37,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getAIMPInfo()
+        private static musicInfo getAIMPInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test AIMP Song", Artist = "Test AIMP Artist" };
 
             return currInfo;
         }
@@ -48,9 +49,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getCADInfo()
+        private static musicInfo getCADInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test CAD Song", Artist = "Test CAD Artist" };
 
             return currInfo;
         }
@@ -60,9 +61,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getiTunesInfo()
+        private static musicInfo getiTunesInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test iTunes Song", Artist = "Test iTunes Artist" };
 
             return currInfo;
         }
@@ -72,9 +73,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getMediaMonkeyInfo()
+        private static musicInfo getMediaMonkeyInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test MediaMonkey Song", Artist = "Test MediaMonkey Artist" };
 
             return currInfo;
         }
@@ -84,9 +85,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getWinampInfo()
+        private static musicInfo getWinampInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test Winamp Song", Artist = "Test Winamp Artist" };
 
             return currInfo;
         }
@@ -96,9 +97,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getWMPInfo()
+        private static musicInfo getWMPInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test WMP Song", Artist = "Test WMP Artist" };
 
             return currInfo;
         }
@@ -108,9 +109,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getSpotifyInfo()
+        private static musicInfo getSpotifyInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test Spotify Song", Artist = "Test Spotify Artist" };
 
             return currInfo;
         }
@@ -120,9 +121,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getGPMDPInfo()
+        private static musicInfo getGPMDPInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test GPMDP Song", Artist = "Test GPMDP Artist" };
 
             return currInfo;
         }
@@ -132,9 +133,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getSoundnodeInfo()
+        private static musicInfo getSoundnodeInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test Soundnode Song", Artist = "Test Soundnode Artist" };
 
             return currInfo;
         }
@@ -144,9 +145,9 @@ namespace BetterMusicPlugin
         {
             return true;
         }
-        private static String[] getChromeMusicInfoXposedInfo()
+        private static musicInfo getChromeMusicInfoXposedInfo()
         {
-            String[] currInfo = { "Test AIMP Song", "Test AIMP Artist" };
+            musicInfo currInfo = new musicInfo { Name = "Test ChromeMusicInfoXposed Song", Artist = "Test ChromeMusicInfoXposed Artist" };
 
             return currInfo;
         }
@@ -164,10 +165,10 @@ namespace BetterMusicPlugin
                 {
                     if(isAIMPRunning())
                     {
-                        String[] newInfo = getAIMPInfo();
-                        if(newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getAIMPInfo();
+                        if(newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-                            
+                            latestInfo[i] = newInfo;
                         }
                     }
                 }
@@ -175,8 +176,8 @@ namespace BetterMusicPlugin
                 {
                     if (isCADRunning())
                     {
-                        String[] newInfo = getCADInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getCADInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -186,8 +187,8 @@ namespace BetterMusicPlugin
                 {
                     if (isiTunesRunning())
                     {
-                        String[] newInfo = getiTunesInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getiTunesInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -197,8 +198,8 @@ namespace BetterMusicPlugin
                 {
                     if (isMediaMonkeyRunning())
                     {
-                        String[] newInfo = getMediaMonkeyInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getMediaMonkeyInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -208,8 +209,8 @@ namespace BetterMusicPlugin
                 {
                     if (isWinampRunning())
                     {
-                        String[] newInfo = getWinampInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getWinampInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -219,8 +220,8 @@ namespace BetterMusicPlugin
                 {
                     if (isWMPRunning())
                     {
-                        String[] newInfo = getWMPInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getWMPInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -230,8 +231,8 @@ namespace BetterMusicPlugin
                 {
                     if (isSpotifyRunning())
                     {
-                        String[] newInfo = getSpotifyInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getSpotifyInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -241,8 +242,8 @@ namespace BetterMusicPlugin
                 {
                     if (isGPMDPRunning())
                     {
-                        String[] newInfo = getGPMDPInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getGPMDPInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -252,8 +253,8 @@ namespace BetterMusicPlugin
                 {
                     if (isSoundnodeRunning())
                     {
-                        String[] newInfo = getSoundnodeInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getSoundnodeInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -264,8 +265,8 @@ namespace BetterMusicPlugin
                 {
                     if (isChromeMusicInfoXposedRunning())
                     {
-                        String[] newInfo = getChromeMusicInfoXposedInfo();
-                        if (newInfo[0].Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        musicInfo newInfo = getChromeMusicInfoXposedInfo();
+                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
 
                         }
@@ -283,7 +284,9 @@ namespace BetterMusicPlugin
 
     class musicInfo
     {
-        public string Name, Artist, Album, AlbumArt;
-        
+        public string Name { get; set; }
+        public string Artist { get; set; }
+        public string Album { get; set; }
+        public string AlbumArt { get; set; }
     }
 }

@@ -5,6 +5,24 @@ using Rainmeter;
 
 namespace BetterMusicPlugin
 {
+    internal class Measure
+    {
+        internal virtual void Dispose()
+        {
+
+        }
+
+        internal virtual void Reload(Rainmeter.API api, ref double maxValue)
+        {
+
+        }
+
+        internal virtual double Update()
+        {
+            return 0.0;
+        }
+    }
+
     public static class Plugin
     {
         //To add a new player add the name here and add the function to handle its info and a call for its info in the Update functions loop
@@ -159,6 +177,8 @@ namespace BetterMusicPlugin
 
             //Dummy pseudocode to give an idea how the update will work
 
+            int newSongInfoSource = -1;
+
             for(int i = 0; i < allSupportedPlayers.Length; i++)
             {
                 if (allSupportedPlayers[i] == "AIMP")
@@ -166,9 +186,10 @@ namespace BetterMusicPlugin
                     if(isAIMPRunning())
                     {
                         musicInfo newInfo = getAIMPInfo();
-                        if(newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if(!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
                             latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -177,9 +198,10 @@ namespace BetterMusicPlugin
                     if (isCADRunning())
                     {
                         musicInfo newInfo = getCADInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -188,9 +210,10 @@ namespace BetterMusicPlugin
                     if (isiTunesRunning())
                     {
                         musicInfo newInfo = getiTunesInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -199,9 +222,10 @@ namespace BetterMusicPlugin
                     if (isMediaMonkeyRunning())
                     {
                         musicInfo newInfo = getMediaMonkeyInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -210,9 +234,10 @@ namespace BetterMusicPlugin
                     if (isWinampRunning())
                     {
                         musicInfo newInfo = getWinampInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -221,9 +246,10 @@ namespace BetterMusicPlugin
                     if (isWMPRunning())
                     {
                         musicInfo newInfo = getWMPInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -232,9 +258,10 @@ namespace BetterMusicPlugin
                     if (isSpotifyRunning())
                     {
                         musicInfo newInfo = getSpotifyInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -243,9 +270,10 @@ namespace BetterMusicPlugin
                     if (isGPMDPRunning())
                     {
                         musicInfo newInfo = getGPMDPInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -254,9 +282,10 @@ namespace BetterMusicPlugin
                     if (isSoundnodeRunning())
                     {
                         musicInfo newInfo = getSoundnodeInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
 
@@ -266,9 +295,10 @@ namespace BetterMusicPlugin
                     if (isChromeMusicInfoXposedRunning())
                     {
                         musicInfo newInfo = getChromeMusicInfoXposedInfo();
-                        if (newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
+                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
                         {
-
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
                         }
                     }
                 }
@@ -276,7 +306,15 @@ namespace BetterMusicPlugin
                 {
                     System.Console.WriteLine("Media player defined but not handled");
                 }
+
+                if(newSongInfoSource >= 0)
+                {
+                    i = allSupportedPlayers.Length;
+                }
+
             }
+
+            
 
             return measure.Update();
         }

@@ -7,6 +7,60 @@ namespace BetterMusicPlugin
 {
     internal class Measure
     {
+        //To add a new player add the name here and add the function to handle its info and a call for its info in the Update functions loop
+        private static String[] allSupportedPlayers = {"GPMDP", "Soundnode", "ChromeMusicInfoXposed" };
+        private static musicInfo[] latestInfo;
+        int latestInfoSource = -1;
+
+        enum MeasureType
+        {
+            Artist,
+            Album,
+            Title,
+            Number,
+            Year,
+            Genre,
+            Cover,
+            File,
+            Duration,
+            Position,
+            Progress,
+            Rating,
+            Repeat,
+            Shuffle,
+            State,
+            Status,
+            Volume
+        }
+
+        class musicInfo
+        {
+            public string Artist { get; set; }
+            public string Album { get; set; }
+            public string Title { get; set; }
+            public string Number { get; set; }
+            public string Year { get; set; }
+            public string Genre { get; set; }
+            public string Cover { get; set; }
+            public string File { get; set; }
+            public string Duration { get; set; }
+            public string Position { get; set; }
+            public string Progress { get; set; }
+            public string Rating { get; set; }
+            public string Repeat { get; set; }
+            public string Shuffle { get; set; }
+            public string State { get; set; }
+            public string Status { get; set; }
+            public string Volume { get; set; }
+        }
+
+        private MeasureType Type = MeasureType.Artist;
+
+        internal Measure()
+        {
+            latestInfo = new musicInfo[allSupportedPlayers.Length];
+        }
+
         internal virtual void Dispose()
         {
 
@@ -14,27 +68,504 @@ namespace BetterMusicPlugin
 
         internal virtual void Reload(Rainmeter.API api, ref double maxValue)
         {
+            string type = api.ReadString("Type", "");
+            switch (type.ToLowerInvariant())
+            {
+                case "artist":
+                    Type = MeasureType.Artist;
+                    break;
 
+                case "album":
+                    Type = MeasureType.Album;
+                    break;
+
+                case "title":
+                    Type = MeasureType.Title;
+                    break;
+
+                case "number":
+                    Type = MeasureType.Number;
+                    break;
+
+                case "year":
+                    Type = MeasureType.Year;
+                    break;
+
+                case "genre":
+                    Type = MeasureType.Genre;
+                    break;
+
+                case "cover":
+                    Type = MeasureType.Cover;
+                    break;
+
+                case "file":
+                    Type = MeasureType.File;
+                    break;
+
+                case "duration":
+                    Type = MeasureType.Duration;
+                    break;
+
+                case "position":
+                    Type = MeasureType.Position;
+                    break;
+
+                case "progress":
+                    Type = MeasureType.Progress;
+                    break;
+
+                case "rating":
+                    Type = MeasureType.Rating;
+                    break;
+
+                case "repeat":
+                    Type = MeasureType.Repeat;
+                    break;
+
+                case "shuffle":
+                    Type = MeasureType.Shuffle;
+                    break;
+
+                case "state":
+                    Type = MeasureType.State;
+                    break;
+
+                case "status":
+                    Type = MeasureType.Status;
+                    break;
+
+                case "volume":
+                    Type = MeasureType.Volume;
+                    break;
+
+                default:
+                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: Type=" + type + " not valid");
+                    break;
+            }
+
+        }
+
+        //Functions specific to AIMP player
+        private static Boolean isAIMPRunning()
+        {
+            return true;
+        }
+        private static musicInfo getAIMPInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test AIMP Song", Artist = "Test AIMP Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to CAD player
+        private static Boolean isCADRunning()
+        {
+            return true;
+        }
+        private static musicInfo getCADInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test CAD Song", Artist = "Test CAD Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to iTunes player
+        private static Boolean isiTunesRunning()
+        {
+            return true;
+        }
+        private static musicInfo getiTunesInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test iTunes Song", Artist = "Test iTunes Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to MediaMonkey player
+        private static Boolean isMediaMonkeyRunning()
+        {
+            return true;
+        }
+        private static musicInfo getMediaMonkeyInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test MediaMonkey Song", Artist = "Test MediaMonkey Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to Winamp player
+        private static Boolean isWinampRunning()
+        {
+            return true;
+        }
+        private static musicInfo getWinampInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test Winamp Song", Artist = "Test Winamp Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to WMP player
+        private static Boolean isWMPRunning()
+        {
+            return true;
+        }
+        private static musicInfo getWMPInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test WMP Song", Artist = "Test WMP Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to Spotify player
+        private static Boolean isSpotifyRunning()
+        {
+            return true;
+        }
+        private static musicInfo getSpotifyInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test Spotify Song", Artist = "Test Spotify Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to GPMDP player
+        private static Boolean isGPMDPRunning()
+        {
+            return true;
+        }
+        private static musicInfo getGPMDPInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test GPMDP Song", Artist = "Test GPMDP Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to Soundnode player
+        private static Boolean isSoundnodeRunning()
+        {
+            return true;
+        }
+        private static musicInfo getSoundnodeInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test Soundnode Song", Artist = "Test Soundnode Artist" };
+
+            return currInfo;
+        }
+
+        //Functions specific to ChromeMusicInfoXposed player
+        private static Boolean isChromeMusicInfoXposedRunning()
+        {
+            return true;
+        }
+        private static musicInfo getChromeMusicInfoXposedInfo()
+        {
+            musicInfo currInfo = new musicInfo { Title = "Test ChromeMusicInfoXposed Song", Artist = "Test ChromeMusicInfoXposed Artist" };
+
+            return currInfo;
         }
 
         internal virtual double Update()
         {
+            //Dummy pseudocode to give an idea how the update will work
+
+            int newSongInfoSource = -1;
+
+            for (int i = 0; i < allSupportedPlayers.Length; i++)
+            {
+                if (allSupportedPlayers[i] == "AIMP")
+                {
+                    if (isAIMPRunning())
+                    {
+                        musicInfo newInfo = getAIMPInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else if (allSupportedPlayers[i] == "CAD")
+                {
+                    if (isCADRunning())
+                    {
+                        musicInfo newInfo = getCADInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else if (allSupportedPlayers[i] == "iTunes")
+                {
+                    if (isiTunesRunning())
+                    {
+                        musicInfo newInfo = getiTunesInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else if (allSupportedPlayers[i] == "MediaMonkey")
+                {
+                    if (isMediaMonkeyRunning())
+                    {
+                        musicInfo newInfo = getMediaMonkeyInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else if (allSupportedPlayers[i] == "Winamp")
+                {
+                    if (isWinampRunning())
+                    {
+                        musicInfo newInfo = getWinampInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else if (allSupportedPlayers[i] == "WMP")
+                {
+                    if (isWMPRunning())
+                    {
+                        musicInfo newInfo = getWMPInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else if (allSupportedPlayers[i] == "Spotify")
+                {
+                    if (isSpotifyRunning())
+                    {
+                        musicInfo newInfo = getSpotifyInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else if (allSupportedPlayers[i] == "GPMDP")
+                {
+                    if (isGPMDPRunning())
+                    {
+                        musicInfo newInfo = getGPMDPInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else if (allSupportedPlayers[i] == "Soundnode")
+                {
+                    if (isSoundnodeRunning())
+                    {
+                        musicInfo newInfo = getSoundnodeInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+
+                }
+                else if (allSupportedPlayers[i] == "ChromeMusicInfoXposed")
+                {
+                    if (isChromeMusicInfoXposedRunning())
+                    {
+                        musicInfo newInfo = getChromeMusicInfoXposedInfo();
+                        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
+                        {
+                            latestInfo[i] = newInfo;
+                            newSongInfoSource = i;
+                        }
+                    }
+                }
+                else
+                {
+                    System.Console.WriteLine("Media player defined but not handled");
+                }
+
+                if (newSongInfoSource >= 0)
+                {
+                    i = allSupportedPlayers.Length;
+                    latestInfoSource = newSongInfoSource;
+                }
+
+            }
+
             return 0.0;
         }
-    }
 
+        internal string GetString()
+        {
+
+            switch (Type)
+            {
+                case MeasureType.Artist:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Artist;
+                    }
+                    return "";
+                    break;
+                case MeasureType.Album:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Album;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Title:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Title;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Number:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Number;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Year:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Year;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Genre:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Genre;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Cover:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Cover;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.File:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].File;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Duration:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Duration;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Position:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Position;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Progress:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Progress;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Rating:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Rating;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Repeat:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Repeat;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Shuffle:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Shuffle;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.State:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].State;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Status:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Status;
+                    }
+                    return "";
+                    break;
+
+                case MeasureType.Volume:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].Volume;
+                    }
+                    return "";
+                    break;
+
+                default:
+                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: Type not valid");
+                    break;
+            }
+            return null;
+        }
+    }
     public static class Plugin
     {
-        //To add a new player add the name here and add the function to handle its info and a call for its info in the Update functions loop
-        private static String[] allSupportedPlayers = { "AIMP", "CAD", "iTunes", "MediaMonkey", "Winamp", "WMP", "Spotify", "GPMDP", "Soundnode", "ChromeMusicInfoXposed" };
-        private static musicInfo[] latestInfo;
 
         [DllExport]
         public static void Initialize(ref IntPtr data, IntPtr rm)
         {
             data = GCHandle.ToIntPtr(GCHandle.Alloc(new Measure()));
 
-            latestInfo = new musicInfo[allSupportedPlayers.Length];
         }
 
         [DllExport]
@@ -50,281 +581,18 @@ namespace BetterMusicPlugin
             measure.Reload(new Rainmeter.API(rm), ref maxValue);
         }
 
-        //Functions specific to AIMP player
-        private static Boolean isAIMPRunning()
-        {
-            return true;
-        }
-        private static musicInfo getAIMPInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test AIMP Song", Artist = "Test AIMP Artist" };
 
-            return currInfo;
-        }
-
-        //Functions specific to CAD player
-        private static Boolean isCADRunning()
-        {
-            return true;
-        }
-        private static musicInfo getCADInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test CAD Song", Artist = "Test CAD Artist" };
-
-            return currInfo;
-        }
-
-        //Functions specific to iTunes player
-        private static Boolean isiTunesRunning()
-        {
-            return true;
-        }
-        private static musicInfo getiTunesInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test iTunes Song", Artist = "Test iTunes Artist" };
-
-            return currInfo;
-        }
-
-        //Functions specific to MediaMonkey player
-        private static Boolean isMediaMonkeyRunning()
-        {
-            return true;
-        }
-        private static musicInfo getMediaMonkeyInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test MediaMonkey Song", Artist = "Test MediaMonkey Artist" };
-
-            return currInfo;
-        }
-
-        //Functions specific to Winamp player
-        private static Boolean isWinampRunning()
-        {
-            return true;
-        }
-        private static musicInfo getWinampInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test Winamp Song", Artist = "Test Winamp Artist" };
-
-            return currInfo;
-        }
-
-        //Functions specific to WMP player
-        private static Boolean isWMPRunning()
-        {
-            return true;
-        }
-        private static musicInfo getWMPInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test WMP Song", Artist = "Test WMP Artist" };
-
-            return currInfo;
-        }
-
-        //Functions specific to Spotify player
-        private static Boolean isSpotifyRunning()
-        {
-            return true;
-        }
-        private static musicInfo getSpotifyInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test Spotify Song", Artist = "Test Spotify Artist" };
-
-            return currInfo;
-        }
-
-        //Functions specific to GPMDP player
-        private static Boolean isGPMDPRunning()
-        {
-            return true;
-        }
-        private static musicInfo getGPMDPInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test GPMDP Song", Artist = "Test GPMDP Artist" };
-
-            return currInfo;
-        }
-
-        //Functions specific to Soundnode player
-        private static Boolean isSoundnodeRunning()
-        {
-            return true;
-        }
-        private static musicInfo getSoundnodeInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test Soundnode Song", Artist = "Test Soundnode Artist" };
-
-            return currInfo;
-        }
-
-        //Functions specific to ChromeMusicInfoXposed player
-        private static Boolean isChromeMusicInfoXposedRunning()
-        {
-            return true;
-        }
-        private static musicInfo getChromeMusicInfoXposedInfo()
-        {
-            musicInfo currInfo = new musicInfo { Name = "Test ChromeMusicInfoXposed Song", Artist = "Test ChromeMusicInfoXposed Artist" };
-
-            return currInfo;
-        }
 
         [DllExport]
         public static double Update(IntPtr data)
         {
             Measure measure = (Measure)GCHandle.FromIntPtr(data).Target;
 
-            //Dummy pseudocode to give an idea how the update will work
 
-            int newSongInfoSource = -1;
 
-            for(int i = 0; i < allSupportedPlayers.Length; i++)
-            {
-                if (allSupportedPlayers[i] == "AIMP")
-                {
-                    if(isAIMPRunning())
-                    {
-                        musicInfo newInfo = getAIMPInfo();
-                        if(!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else if (allSupportedPlayers[i] == "CAD")
-                {
-                    if (isCADRunning())
-                    {
-                        musicInfo newInfo = getCADInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else if (allSupportedPlayers[i] == "iTunes")
-                {
-                    if (isiTunesRunning())
-                    {
-                        musicInfo newInfo = getiTunesInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else if (allSupportedPlayers[i] == "MediaMonkey")
-                {
-                    if (isMediaMonkeyRunning())
-                    {
-                        musicInfo newInfo = getMediaMonkeyInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else if (allSupportedPlayers[i] == "Winamp")
-                {
-                    if (isWinampRunning())
-                    {
-                        musicInfo newInfo = getWinampInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else if (allSupportedPlayers[i] == "WMP")
-                {
-                    if (isWMPRunning())
-                    {
-                        musicInfo newInfo = getWMPInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else if (allSupportedPlayers[i] == "Spotify")
-                {
-                    if (isSpotifyRunning())
-                    {
-                        musicInfo newInfo = getSpotifyInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else if (allSupportedPlayers[i] == "GPMDP")
-                {
-                    if (isGPMDPRunning())
-                    {
-                        musicInfo newInfo = getGPMDPInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else if (allSupportedPlayers[i] == "Soundnode")
-                {
-                    if (isSoundnodeRunning())
-                    {
-                        musicInfo newInfo = getSoundnodeInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
 
-                }
-                else if (allSupportedPlayers[i] == "ChromeMusicInfoXposed")
-                {
-                    if (isChromeMusicInfoXposedRunning())
-                    {
-                        musicInfo newInfo = getChromeMusicInfoXposedInfo();
-                        if (!newInfo.Name.Equals(latestInfo[i].Name) || latestInfo[i].Name == null)
-                        {
-                            latestInfo[i] = newInfo;
-                            newSongInfoSource = i;
-                        }
-                    }
-                }
-                else
-                {
-                    System.Console.WriteLine("Media player defined but not handled");
-                }
-
-                if(newSongInfoSource >= 0)
-                {
-                    i = allSupportedPlayers.Length;
-                }
-
-            }
-
-            
 
             return measure.Update();
         }
-    }
-
-    class musicInfo
-    {
-        public string Name { get; set; }
-        public string Artist { get; set; }
-        public string Album { get; set; }
-        public string AlbumArt { get; set; }
     }
 }

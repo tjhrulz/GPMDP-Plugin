@@ -7,12 +7,7 @@ namespace BetterMusicPlugin
 {
     internal class Measure
     {
-        //To add a new player add the name here and add the function to handle its info and a call for its info in the Update functions loop
-        private static String[] allSupportedPlayers = {"GPMDP", "Soundnode", "ChromeMusicInfoXposed" };
-        private static musicInfo[] latestInfo;
-        int latestInfoSource = -1;
-
-        enum MeasureType
+        enum MeasureInfoType
         {
             Artist,
             Album,
@@ -32,6 +27,19 @@ namespace BetterMusicPlugin
             Status,
             Volume
         }
+
+        enum MeasurePlayerType
+        {
+            GPMDP,
+            Soundnode,
+            ChromeMusicInfoXposed,
+            Dynamic
+        }
+
+        //To add a new player add the name here and add the function to handle its info and a call for its info in the Update functions loop
+        private static MeasurePlayerType[] allSupportedPlayers = { MeasurePlayerType.GPMDP, MeasurePlayerType.Soundnode, MeasurePlayerType.ChromeMusicInfoXposed };
+        private static musicInfo[] latestInfo;
+        int latestInfoSource = -1;
 
         class musicInfo
         {
@@ -54,7 +62,9 @@ namespace BetterMusicPlugin
             public string Volume { get; set; }
         }
 
-        private MeasureType Type = MeasureType.Title;
+        //Initialized to title so that if a bad type is given they will get that and an error
+        private MeasureInfoType InfoType = MeasureInfoType.Title;
+        private MeasurePlayerType PlayerType = MeasurePlayerType.Dynamic;
 
         internal Measure()
         {
@@ -68,82 +78,105 @@ namespace BetterMusicPlugin
 
         internal virtual void Reload(Rainmeter.API api, ref double maxValue)
         {
-            string type = api.ReadString("PlayerType", "title");
-            switch (type.ToLowerInvariant())
+            string infoType = api.ReadString("PlayerInfo", "title");
+            switch (infoType.ToLowerInvariant())
             {
                 case "artist":
-                    Type = MeasureType.Artist;
+                    InfoType = MeasureInfoType.Artist;
                     break;
 
                 case "album":
-                    Type = MeasureType.Album;
+                    InfoType = MeasureInfoType.Album;
                     break;
 
                 case "title":
-                    Type = MeasureType.Title;
+                    InfoType = MeasureInfoType.Title;
                     break;
 
                 case "number":
-                    Type = MeasureType.Number;
+                    InfoType = MeasureInfoType.Number;
                     break;
 
                 case "year":
-                    Type = MeasureType.Year;
+                    InfoType = MeasureInfoType.Year;
                     break;
 
                 case "genre":
-                    Type = MeasureType.Genre;
+                    InfoType = MeasureInfoType.Genre;
                     break;
 
                 case "cover":
-                    Type = MeasureType.Cover;
+                    InfoType = MeasureInfoType.Cover;
                     break;
 
                 case "file":
-                    Type = MeasureType.File;
+                    InfoType = MeasureInfoType.File;
                     break;
 
                 case "duration":
-                    Type = MeasureType.Duration;
+                    InfoType = MeasureInfoType.Duration;
                     break;
 
                 case "position":
-                    Type = MeasureType.Position;
+                    InfoType = MeasureInfoType.Position;
                     break;
 
                 case "progress":
-                    Type = MeasureType.Progress;
+                    InfoType = MeasureInfoType.Progress;
                     break;
 
                 case "rating":
-                    Type = MeasureType.Rating;
+                    InfoType = MeasureInfoType.Rating;
                     break;
 
                 case "repeat":
-                    Type = MeasureType.Repeat;
+                    InfoType = MeasureInfoType.Repeat;
                     break;
 
                 case "shuffle":
-                    Type = MeasureType.Shuffle;
+                    InfoType = MeasureInfoType.Shuffle;
                     break;
 
                 case "state":
-                    Type = MeasureType.State;
+                    InfoType = MeasureInfoType.State;
                     break;
 
                 case "status":
-                    Type = MeasureType.Status;
+                    InfoType = MeasureInfoType.Status;
                     break;
 
                 case "volume":
-                    Type = MeasureType.Volume;
+                    InfoType = MeasureInfoType.Volume;
                     break;
 
                 default:
-                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: Type=" + type + " not valid");
+                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: InfoType=" + infoType + " not valid");
                     break;
             }
 
+            string playerType = api.ReadString("PlayerType", "dynamic");
+            switch (playerType.ToLowerInvariant())
+            {
+                case "dynamic":
+                    PlayerType = MeasurePlayerType.Dynamic;
+                    break;
+
+                case "gpmdp":
+                    PlayerType = MeasurePlayerType.GPMDP;
+                    break;
+
+                case "soundnode":
+                    PlayerType = MeasurePlayerType.Soundnode;
+                    break;
+
+                case "chromemusicinfoxposed":
+                    PlayerType = MeasurePlayerType.ChromeMusicInfoXposed;
+                    break;
+
+                default:
+                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: PlayerType=" + playerType + " not valid");
+                    break;
+            }
         }
 
         ////Functions specific to AIMP player
@@ -269,269 +302,309 @@ namespace BetterMusicPlugin
         internal virtual double Update()
         {
             //Dummy pseudocode to give an idea how the update will work
-
-           int newSongInfoSource = -1;
-           
-           for (int i = 0; i < allSupportedPlayers.Length; i++)
-           {
-               //if (allSupportedPlayers[i] == "AIMP")
-               //{
-               //    if (isAIMPRunning())
-               //    {
-               //        musicInfo newInfo = getAIMPInfo();
-               //        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
-               //        {
-               //            latestInfo[i] = newInfo;
-               //            newSongInfoSource = i;
-               //        }
-               //    }
-               //}
-               //else if (allSupportedPlayers[i] == "CAD")
-               //{
-               //    if (isCADRunning())
-               //    {
-               //        musicInfo newInfo = getCADInfo();
-               //        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
-               //        {
-               //            latestInfo[i] = newInfo;
-               //            newSongInfoSource = i;
-               //        }
-               //    }
-               //}
-               //else if (allSupportedPlayers[i] == "iTunes")
-               //{
-               //    if (isiTunesRunning())
-               //    {
-               //        musicInfo newInfo = getiTunesInfo();
-               //        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
-               //        {
-               //            latestInfo[i] = newInfo;
-               //            newSongInfoSource = i;
-               //        }
-               //    }
-               //}
-               //else if (allSupportedPlayers[i] == "MediaMonkey")
-               //{
-               //    if (isMediaMonkeyRunning())
-               //    {
-               //        musicInfo newInfo = getMediaMonkeyInfo();
-               //        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
-               //        {
-               //            latestInfo[i] = newInfo;
-               //            newSongInfoSource = i;
-               //        }
-               //    }
-               //}
-               //else if (allSupportedPlayers[i] == "Winamp")
-               //{
-               //    if (isWinampRunning())
-               //    {
-               //        musicInfo newInfo = getWinampInfo();
-               //        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
-               //        {
-               //            latestInfo[i] = newInfo;
-               //            newSongInfoSource = i;
-               //        }
-               //    }
-               //}
-               //else if (allSupportedPlayers[i] == "WMP")
-               //{
-               //    if (isWMPRunning())
-               //    {
-               //        musicInfo newInfo = getWMPInfo();
-               //        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
-               //        {
-               //            latestInfo[i] = newInfo;
-               //            newSongInfoSource = i;
-               //        }
-               //    }
-               //}
-               //else if (allSupportedPlayers[i] == "Spotify")
-               //{
-               //    if (isSpotifyRunning())
-               //    {
-               //        musicInfo newInfo = getSpotifyInfo();
-               //        if (!newInfo.Title.Equals(latestInfo[i].Title) || latestInfo[i].Title == null)
-               //        {
-               //            latestInfo[i] = newInfo;
-               //            newSongInfoSource = i;
-               //        }
-               //    }
-               //}
-               //else 
-               if (allSupportedPlayers[i] == "GPMDP")
-               {
-                   if (isGPMDPRunning())
-                   {
-                       musicInfo newInfo = getGPMDPInfo();
-                        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+            if (PlayerType == MeasurePlayerType.Dynamic)
+            {
+                for (int i = 0; i < allSupportedPlayers.Length; i++)
+                {
+                    //if (allSupportedPlayers[i] == MeasurePlayerType.AIMP)
+                    //{
+                    //    if (isAIMPRunning())
+                    //    {
+                    //        musicInfo newInfo = getAIMPInfo();
+                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                    //        {
+                    //            latestInfo[i] = newInfo;
+                    //            latestInfoSource = i;
+                    //        }
+                    //    }
+                    //}
+                    //else if (allSupportedPlayers[i] == MeasurePlayerType.CAD)
+                    //{
+                    //    if (isCADRunning())
+                    //    {
+                    //        musicInfo newInfo = getCADInfo();
+                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                    //        {
+                    //            latestInfo[i] = newInfo;
+                    //            latestInfoSource = i;
+                    //        }
+                    //    }
+                    //}
+                    //else if (allSupportedPlayers[i] == MeasurePlayerType.iTunes)
+                    //{
+                    //    if (isiTunesRunning())
+                    //    {
+                    //        musicInfo newInfo = getiTunesInfo();
+                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                    //        {
+                    //            latestInfo[i] = newInfo;
+                    //            latestInfoSource = i;
+                    //        }
+                    //    }
+                    //}
+                    //else if (allSupportedPlayers[i] == MeasurePlayerType.MediaMonkey)
+                    //{
+                    //    if (isMediaMonkeyRunning())
+                    //    {
+                    //        musicInfo newInfo = getMediaMonkeyInfo();
+                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                    //        {
+                    //            latestInfo[i] = newInfo;
+                    //            latestInfoSource = i;
+                    //        }
+                    //    }
+                    //}
+                    //else if (allSupportedPlayers[i] == MeasurePlayerType.Winamp)
+                    //{
+                    //    if (isWinampRunning())
+                    //    {
+                    //        musicInfo newInfo = getWinampInfo();
+                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                    //        {
+                    //            latestInfo[i] = newInfo;
+                    //            latestInfoSource = i;
+                    //        }
+                    //    }
+                    //}
+                    //else if (allSupportedPlayers[i] == MeasurePlayerType.WMP)
+                    //{
+                    //    if (isWMPRunning())
+                    //    {
+                    //        musicInfo newInfo = getWMPInfo();
+                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                    //        {
+                    //            latestInfo[i] = newInfo;
+                    //            latestInfoSource = i;
+                    //        }
+                    //    }
+                    //}
+                    //else if (allSupportedPlayers[i] == MeasurePlayerType.Spotify)
+                    //{
+                    //    if (isSpotifyRunning())
+                    //    {
+                    //        musicInfo newInfo = getSpotifyInfo();
+                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                    //        {
+                    //            latestInfo[i] = newInfo;
+                    //            latestInfoSource = i;
+                    //        }
+                    //    }
+                    //}
+                    //else 
+                    if (allSupportedPlayers[i] == MeasurePlayerType.GPMDP)
+                    {
+                        if (isGPMDPRunning())
                         {
-                           latestInfo[i] = newInfo;
-                           newSongInfoSource = i;
-                       }
-                   }
-
-                   latestInfo[i] = new musicInfo { Title = "Test GPMDP Song", Artist = "Test GPMDP Artist" };
-                   newSongInfoSource = i;
-               }
-               else if (allSupportedPlayers[i] == "Soundnode")
-               {
-                   if (isSoundnodeRunning())
-                   {
-                       musicInfo newInfo = getSoundnodeInfo();
-                        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            musicInfo newInfo = getGPMDPInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                latestInfoSource = i;
+                            }
+                        }
+                    }
+                    else if (allSupportedPlayers[i] == MeasurePlayerType.Soundnode)
+                    {
+                        if (isSoundnodeRunning())
                         {
-                           latestInfo[i] = newInfo;
-                           newSongInfoSource = i;
-                       }
-                   }
-               
-               }
-               else if (allSupportedPlayers[i] == "ChromeMusicInfoXposed")
-               {
-                   if (isChromeMusicInfoXposedRunning())
-                   {
-                       musicInfo newInfo = getChromeMusicInfoXposedInfo();
-                        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            musicInfo newInfo = getSoundnodeInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                latestInfoSource = i;
+                            }
+                        }
+                    }
+                    else if (allSupportedPlayers[i] == MeasurePlayerType.ChromeMusicInfoXposed)
+                    {
+                        if (isChromeMusicInfoXposedRunning())
                         {
-                           latestInfo[i] = newInfo;
-                           newSongInfoSource = i;
-                       }
-                   }
-               }
-               else
-               {
-                   System.Console.WriteLine("Media player defined but not handled");
-               }
-           
-               if (newSongInfoSource >= 0)
-               {
-                   i = allSupportedPlayers.Length;
-                   latestInfoSource = newSongInfoSource;
-               }
-           
-           }
+                            musicInfo newInfo = getChromeMusicInfoXposedInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                latestInfoSource = i;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        System.Console.WriteLine("Media player defined but not handled");
+                    }
 
-            return 0.5;
+                    //Once a new source has been found break out of the loop and update lastestInfoSource
+                    if (latestInfoSource >= 0)
+                    {
+                        i = allSupportedPlayers.Length;
+                    }
+
+                }
+            }
+            else
+            {
+
+                if (PlayerType == MeasurePlayerType.GPMDP)
+                {
+                    if (isGPMDPRunning())
+                    {
+                        musicInfo newInfo = getGPMDPInfo();
+                        if (newInfo.Title != null && (latestInfo[(int)MeasurePlayerType.GPMDP] == null || !newInfo.Title.Equals(latestInfo[(int)MeasurePlayerType.GPMDP].Title)))
+                        {
+                            latestInfo[(int)MeasurePlayerType.GPMDP] = newInfo;
+                            latestInfoSource = (int)MeasurePlayerType.GPMDP;
+                        }
+                    }
+                }
+                else if (PlayerType == MeasurePlayerType.Soundnode)
+                {
+                    if (isSoundnodeRunning())
+                    {
+                        musicInfo newInfo = getSoundnodeInfo();
+                        if (newInfo.Title != null && (latestInfo[(int)MeasurePlayerType.Soundnode] == null || !newInfo.Title.Equals(latestInfo[(int)MeasurePlayerType.Soundnode].Title)))
+                        {
+                            latestInfo[(int)MeasurePlayerType.Soundnode] = newInfo;
+                            latestInfoSource = (int)MeasurePlayerType.Soundnode;
+                        }
+                    }
+                }
+                else if (PlayerType == MeasurePlayerType.ChromeMusicInfoXposed)
+                {
+                    if (isChromeMusicInfoXposedRunning())
+                    {
+                        musicInfo newInfo = getChromeMusicInfoXposedInfo();
+                        if (newInfo.Title != null && (latestInfo[(int)MeasurePlayerType.ChromeMusicInfoXposed] == null || !newInfo.Title.Equals(latestInfo[(int)MeasurePlayerType.ChromeMusicInfoXposed].Title)))
+                        {
+                            latestInfo[(int)MeasurePlayerType.ChromeMusicInfoXposed] = newInfo;
+                            latestInfoSource = (int)MeasurePlayerType.ChromeMusicInfoXposed;
+                        }
+                    }
+                }
+                else
+                {
+                    System.Console.WriteLine("Media player defined but not handled");
+                }
+            }
+
+            return 0.0;
         }
 
         internal string GetString()
         {
-            switch (Type)
+            switch (InfoType)
             {
-                case MeasureType.Artist:
+                case MeasureInfoType.Artist:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Artist;
                     }
                     return "";
             
-                case MeasureType.Album:
+                case MeasureInfoType.Album:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Album;
                     }
                     return "";
             
-                case MeasureType.Title:
+                case MeasureInfoType.Title:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Title;
                     }
                     return "";
             
-                case MeasureType.Number:
+                case MeasureInfoType.Number:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Number;
                     }
                     return "";
             
-                case MeasureType.Year:
+                case MeasureInfoType.Year:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Year;
                     }
                     return "";
             
-                case MeasureType.Genre:
+                case MeasureInfoType.Genre:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Genre;
                     }
                     return "";
             
-                case MeasureType.Cover:
+                case MeasureInfoType.Cover:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Cover;
                     }
                     return "";
             
-                case MeasureType.File:
+                case MeasureInfoType.File:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].File;
                     }
                     return "";
             
-                case MeasureType.Duration:
+                case MeasureInfoType.Duration:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Duration;
                     }
                     return "";
             
-                case MeasureType.Position:
+                case MeasureInfoType.Position:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Position;
                     }
                     return "";
             
-                case MeasureType.Progress:
+                case MeasureInfoType.Progress:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Progress;
                     }
                     return "";
             
-                case MeasureType.Rating:
+                case MeasureInfoType.Rating:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Rating;
                     }
                     return "";
             
-                case MeasureType.Repeat:
+                case MeasureInfoType.Repeat:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Repeat;
                     }
                     return "";
             
-                case MeasureType.Shuffle:
+                case MeasureInfoType.Shuffle:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Shuffle;
                     }
                     return "";
             
-                case MeasureType.State:
+                case MeasureInfoType.State:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].State;
                     }
                     return "";
             
-                case MeasureType.Status:
+                case MeasureInfoType.Status:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Status;
                     }
                     return "";
             
-                case MeasureType.Volume:
+                case MeasureInfoType.Volume:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Volume;

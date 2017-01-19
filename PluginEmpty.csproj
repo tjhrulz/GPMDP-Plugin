@@ -8,8 +8,8 @@
     <ProjectGuid>{D31F73ED-3978-44FA-B599-49584BA30D3A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PluginEmpty</RootNamespace>
-    <AssemblyName>Empty</AssemblyName>
+    <RootNamespace>PluginBetterMusic</RootNamespace>
+    <AssemblyName>BetterMusic</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <OldToolsVersion>3.5</OldToolsVersion>

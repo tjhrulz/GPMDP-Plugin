@@ -408,7 +408,7 @@ namespace BetterMusicPlugin
 
             }
 
-            return 0.0;
+            return 0.5;
         }
 
         internal string GetString()
@@ -422,14 +422,13 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Artist;
                     }
                     return "";
-                    break;
+
                 case MeasureType.Album:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Album;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Title:
                     if (latestInfoSource >= 0)
@@ -437,7 +436,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Title;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Number:
                     if (latestInfoSource >= 0)
@@ -445,7 +443,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Number;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Year:
                     if (latestInfoSource >= 0)
@@ -453,7 +450,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Year;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Genre:
                     if (latestInfoSource >= 0)
@@ -461,7 +457,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Genre;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Cover:
                     if (latestInfoSource >= 0)
@@ -469,7 +464,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Cover;
                     }
                     return "";
-                    break;
 
                 case MeasureType.File:
                     if (latestInfoSource >= 0)
@@ -477,7 +471,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].File;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Duration:
                     if (latestInfoSource >= 0)
@@ -485,7 +478,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Duration;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Position:
                     if (latestInfoSource >= 0)
@@ -493,7 +485,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Position;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Progress:
                     if (latestInfoSource >= 0)
@@ -501,7 +492,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Progress;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Rating:
                     if (latestInfoSource >= 0)
@@ -509,7 +499,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Rating;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Repeat:
                     if (latestInfoSource >= 0)
@@ -517,7 +506,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Repeat;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Shuffle:
                     if (latestInfoSource >= 0)
@@ -525,7 +513,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Shuffle;
                     }
                     return "";
-                    break;
 
                 case MeasureType.State:
                     if (latestInfoSource >= 0)
@@ -533,7 +520,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].State;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Status:
                     if (latestInfoSource >= 0)
@@ -541,7 +527,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Status;
                     }
                     return "";
-                    break;
 
                 case MeasureType.Volume:
                     if (latestInfoSource >= 0)
@@ -549,7 +534,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Volume;
                     }
                     return "";
-                    break;
 
                 default:
                     API.Log(API.LogType.Error, "BetterMusicPlugin.dll: Type not valid");
@@ -560,18 +544,24 @@ namespace BetterMusicPlugin
     }
     public static class Plugin
     {
+        static IntPtr StringBuffer = IntPtr.Zero;
 
         [DllExport]
         public static void Initialize(ref IntPtr data, IntPtr rm)
         {
             data = GCHandle.ToIntPtr(GCHandle.Alloc(new Measure()));
-
         }
 
         [DllExport]
         public static void Finalize(IntPtr data)
         {
             GCHandle.FromIntPtr(data).Free();
+
+            if (StringBuffer != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(StringBuffer);
+                StringBuffer = IntPtr.Zero;
+            }
         }
 
         [DllExport]
@@ -581,18 +571,30 @@ namespace BetterMusicPlugin
             measure.Reload(new Rainmeter.API(rm), ref maxValue);
         }
 
-
-
         [DllExport]
         public static double Update(IntPtr data)
         {
             Measure measure = (Measure)GCHandle.FromIntPtr(data).Target;
-
-
-
-
-
             return measure.Update();
+        }
+
+        [DllExport]
+        public static IntPtr GetString(IntPtr data)
+        {
+            Measure measure = (Measure)GCHandle.FromIntPtr(data).Target;
+            if (StringBuffer != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(StringBuffer);
+                StringBuffer = IntPtr.Zero;
+            }
+
+            string stringValue = measure.GetString();
+            if (stringValue != null)
+            {
+                StringBuffer = Marshal.StringToHGlobalUni(stringValue);
+            }
+
+            return StringBuffer;
         }
     }
 }

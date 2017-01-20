@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+//using System.Net.WebSockets;
+using Newtonsoft.Json;
+using WebSocketSharp;
 using Rainmeter;
 
 namespace BetterMusicPlugin
@@ -274,6 +277,21 @@ namespace BetterMusicPlugin
         private static musicInfo getGPMDPInfo()
         {
             musicInfo currInfo = new musicInfo { Title = "Test GPMDP Song", Artist = "Test GPMDP Artist" };
+
+            List<Object> requestAccess = new List<Object>();
+            Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
+            requestAccess.Add(accessObject);
+
+            API.Log(API.LogType.Warning, requestAccess.ToString());
+
+            var test = JsonConvert.SerializeObject(requestAccess, Formatting.Indented);
+
+            //using (var ws = new WebSocket("ws://localhost:5672"))
+            //{
+            //    ws.Connect();
+            //    ws.Send(JsonConvert.SerializeObject(requestAccess, Formatting.Indented));
+            //    Console.ReadKey(true);
+            //}
 
             return currInfo;
         }

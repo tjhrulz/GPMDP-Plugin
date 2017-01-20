@@ -281,7 +281,9 @@ namespace BetterMusicPlugin
         //Functions specific to Soundnode player
         private static Boolean isSoundnodeRunning()
         {
-            return true;
+            System.Diagnostics.Process[] SoundnodeStatus = System.Diagnostics.Process.GetProcessesByName("Soundnode");
+
+            return (SoundnodeStatus.Length > 0) ? true : false;
         }
         private static musicInfo getSoundnodeInfo()
         {
@@ -293,7 +295,7 @@ namespace BetterMusicPlugin
         //Functions specific to ChromeMusicInfoXposed player
         private static Boolean isChromeMusicInfoXposedRunning()
         {
-            return true;
+            return false;
         }
         private static musicInfo getChromeMusicInfoXposedInfo()
         {

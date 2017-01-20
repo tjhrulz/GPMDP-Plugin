@@ -38,8 +38,8 @@ namespace BetterMusicPlugin
 
         //To add a new player add the name here and add the function to handle its info and a call for its info in the Update functions loop
         //private static MeasurePlayerType[] allSupportedPlayers = { MeasurePlayerType.GPMDP, MeasurePlayerType.Soundnode, MeasurePlayerType.ChromeMusicInfoXposed };
-        private static musicInfo[] latestInfo;
-        int latestInfoSource = -1;
+        musicInfo[] latestInfo;
+        int latestInfoSource;
 
         class musicInfo
         {
@@ -69,6 +69,7 @@ namespace BetterMusicPlugin
         internal Measure()
         {
             latestInfo = new musicInfo[Enum.GetNames(typeof(MeasurePlayerType)).Length];
+            latestInfoSource = -1;
         }
 
         internal virtual void Dispose()
@@ -266,7 +267,9 @@ namespace BetterMusicPlugin
         //Functions specific to GPMDP player
         private static Boolean isGPMDPRunning()
         {
-            return true;
+            System.Diagnostics.Process[] GooglePlayMusicStatus = System.Diagnostics.Process.GetProcessesByName("Google Play Music Desktop Player");
+
+            return (GooglePlayMusicStatus.Length > 0) ? true : false;
         }
         private static musicInfo getGPMDPInfo()
         {
@@ -305,7 +308,7 @@ namespace BetterMusicPlugin
             if (PlayerType == MeasurePlayerType.Dynamic)
             {
                 int newSongInfoSource = -1;
-                for (int i = 0; i < Enum.GetNames(typeof(MeasurePlayerType)).Length && newSongInfoSource < 0; i++)
+                for (int i = 0; i < Enum.GetNames(typeof(MeasurePlayerType)).Length; i++)
                 {
                     //if (i == (int) MeasurePlayerType.AIMP)
                     //{
@@ -433,11 +436,13 @@ namespace BetterMusicPlugin
                         System.Console.WriteLine("Media player defined but not handled");
                     }
                 }
-                latestInfoSource = newSongInfoSource;
+                if (newSongInfoSource >= 0)
+                {
+                    latestInfoSource = newSongInfoSource;
+                }
             }
             else
             {
-
                 if (PlayerType == MeasurePlayerType.GPMDP)
                 {
                     if (isGPMDPRunning())

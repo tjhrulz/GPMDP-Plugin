@@ -72,17 +72,116 @@ namespace BetterMusicPlugin
         private MeasureInfoType InfoType = MeasureInfoType.Title;
         private MeasurePlayerType PlayerType = MeasurePlayerType.Dynamic;
         private static WebSocket ws;
+        private const String supportedAPIVersion = "1.1.0";
+        private static String openConnectionString;
+        private static musicInfo websocketInfoGPMDP = new musicInfo();
+
+        private static void GPMDPWebsocketCreator()
+        {
+            //List<Object> requestAccess = new List<Object>();
+            //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
+            //requestAccess.Add(accessObject);
+
+            // API.Log(API.LogType.Warning, requestAccess.ToString());
+
+            //var test = JsonConvert.SerializeObject(requestAccess, Formatting.Indented);
+
+            ws = new WebSocket("ws://localhost:5672");
+            bool acceptedVersion = false;
+
+            ws.OnMessage += (sender, e) =>
+            {
+                //Console.WriteLine("GPMDP says: " + e.Data);
+
+                JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(e.Data);
+                JArray arrayData = new JArray(data);
+
+                foreach (JToken token in arrayData)
+                {
+                    //Console.WriteLine(token.First.Last);
+                    //API.Log(API.LogType.Notice, token.First.Last.ToString());
+
+                    JToken currentProperty = token.First.Last;
+                    JToken currentValue = token.Last.Last;
+
+                    if (currentProperty.ToString().CompareTo("API_VERSION") == 0)
+                    {
+                        String versionNumber = currentValue.ToString();
+
+                        if (versionNumber.Substring(0, versionNumber.IndexOf(".")).CompareTo(supportedAPIVersion.Substring(0, versionNumber.IndexOf("."))) == 0)
+                        {
+                            //Console.WriteLine("Version match");
+                            acceptedVersion = true;
+                        }
+                        else
+                        {
+                            //TODO Have a rainmeter attribute flag to supress this error and attempt to continue working
+                            API.Log(API.LogType.Error, "GPMDP Websocket API version is: " + versionNumber + " this plugin was built for version " + supportedAPIVersion);
+                        }
+
+                    }
+                    else if (currentProperty.ToString().ToLower().CompareTo("track") == 0 && acceptedVersion == true)
+                    {
+                        //Console.WriteLine(token);
+                        //currInfo.Title = currentValue.First.Last.ToString();
+
+                        foreach (JProperty trackInfo in currentValue)
+                        {
+                            if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                            {
+                                websocketInfoGPMDP.Title = trackInfo.First.ToString();
+                            }
+                            else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
+                            {
+                                websocketInfoGPMDP.Artist = trackInfo.First.ToString();
+                            }
+                            else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
+                            {
+                                websocketInfoGPMDP.Album = trackInfo.First.ToString();
+                            }
+                            else if (trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
+                            {
+                                websocketInfoGPMDP.Cover = trackInfo.First.ToString();
+                            }
+                        }
+
+                    }
+                }
+
+            };
+
+
+
+            ws.Connect();
+            ws.Send(openConnectionString);
+            //Console.ReadKey(true);
+        }
 
         internal Measure()
         {
             latestInfo = new musicInfo[Enum.GetNames(typeof(MeasurePlayerType)).Length];
             latestInfoSource = -1;
             //ws = new WebSocket("ws://localhost:5672");
+
+            var sb = new StringBuilder();
+            var sw = new StringWriter(sb);
+            var JSONWriter = new JsonTextWriter(sw);
+
+            JSONWriter.WritePropertyName("Namespace");
+            JSONWriter.WriteValue("connect");
+            JSONWriter.WritePropertyName("Method");
+            JSONWriter.WriteValue("connect");
+            JSONWriter.WritePropertyName("Arguments");
+            JSONWriter.WriteValue("GPMDP API Tester");
+
+            openConnectionString = JSONWriter.ToString();
+
+            GPMDPWebsocketCreator();
         }
 
         internal virtual void Dispose()
         {
-
+            ws.Close();
         }
 
         internal virtual void Reload(Rainmeter.API api, ref double maxValue)
@@ -283,67 +382,7 @@ namespace BetterMusicPlugin
         {
             musicInfo currInfo = new musicInfo { Title = "Test GPMDP Song", Artist = "Test GPMDP Artist" };
 
-            //List<Object> requestAccess = new List<Object>();
-            //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
-            //requestAccess.Add(accessObject);
-
-            // API.Log(API.LogType.Warning, requestAccess.ToString());
-
-            //var test = JsonConvert.SerializeObject(requestAccess, Formatting.Indented);
-            var sb = new StringBuilder();
-            var sw = new StringWriter(sb);
-            var JSONWriter = new JsonTextWriter(sw);
-
-            JSONWriter.WritePropertyName("Namespace");
-            JSONWriter.WriteValue("connect");
-            JSONWriter.WritePropertyName("Method");
-            JSONWriter.WriteValue("connect");
-            JSONWriter.WritePropertyName("Arguments");
-            JSONWriter.WriteValue("GPMDP API Tester");
-
-            string openConnectionString = JSONWriter.ToString();
-
-            ws = new WebSocket("ws://localhost:5672");
-            bool acceptedVersion = false;
-
-            ws.OnMessage += (sender, e) =>
-            {
-                //Console.WriteLine("GPMDP says: " + e.Data);
-
-                JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(e.Data);
-                JArray arrayData = new JArray(data);
-
-                foreach (JToken token in arrayData)
-                {
-                    //Console.WriteLine(token.First.Last);
-                    API.Log(API.LogType.Warning, token.First.Last.ToString());
-
-                    if (token.First.Last.ToString().CompareTo("API_VERSION") == 0)
-                    {
-                        String versionNumber = token.Last.Last.ToString();
-
-                        if (versionNumber.Substring(0, versionNumber.IndexOf(".")).CompareTo("1") == 0)
-                        {
-                            //Console.WriteLine("Version match");
-                            acceptedVersion = true;
-                        }
-
-                    }
-                    else if (token.First.Last.ToString().ToLower().CompareTo("track") == 0 && acceptedVersion == true)
-                    {
-                        //Console.WriteLine(token);
-                        currInfo.Title = token.Last.Last.First.Last.ToString();
-                        API.Log(API.LogType.Warning, token.Last.Last.First.Last.ToString());
-                    }
-                }
-
-            };
-
-
-
-            ws.Connect();
-            ws.Send(openConnectionString);
-            //Console.ReadKey(true);
+            currInfo = websocketInfoGPMDP;
 
             return currInfo;
         }

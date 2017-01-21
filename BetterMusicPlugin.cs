@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 //using System.Net.WebSockets;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using WebSocketSharp;
 using Rainmeter;
+using System.Text;
+using System.IO;
 
 namespace BetterMusicPlugin
 {
@@ -68,11 +71,13 @@ namespace BetterMusicPlugin
         //Initialized to title so that if a bad type is given they will get that and an error
         private MeasureInfoType InfoType = MeasureInfoType.Title;
         private MeasurePlayerType PlayerType = MeasurePlayerType.Dynamic;
+        private static WebSocket ws;
 
         internal Measure()
         {
             latestInfo = new musicInfo[Enum.GetNames(typeof(MeasurePlayerType)).Length];
             latestInfoSource = -1;
+            //ws = new WebSocket("ws://localhost:5672");
         }
 
         internal virtual void Dispose()
@@ -278,20 +283,67 @@ namespace BetterMusicPlugin
         {
             musicInfo currInfo = new musicInfo { Title = "Test GPMDP Song", Artist = "Test GPMDP Artist" };
 
-            List<Object> requestAccess = new List<Object>();
-            Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
-            requestAccess.Add(accessObject);
+            //List<Object> requestAccess = new List<Object>();
+            //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
+            //requestAccess.Add(accessObject);
 
-            API.Log(API.LogType.Warning, requestAccess.ToString());
+            // API.Log(API.LogType.Warning, requestAccess.ToString());
 
-            var test = JsonConvert.SerializeObject(requestAccess, Formatting.Indented);
+            //var test = JsonConvert.SerializeObject(requestAccess, Formatting.Indented);
+            var sb = new StringBuilder();
+            var sw = new StringWriter(sb);
+            var JSONWriter = new JsonTextWriter(sw);
 
-            //using (var ws = new WebSocket("ws://localhost:5672"))
-            //{
-            //    ws.Connect();
-            //    ws.Send(JsonConvert.SerializeObject(requestAccess, Formatting.Indented));
-            //    Console.ReadKey(true);
-            //}
+            JSONWriter.WritePropertyName("Namespace");
+            JSONWriter.WriteValue("connect");
+            JSONWriter.WritePropertyName("Method");
+            JSONWriter.WriteValue("connect");
+            JSONWriter.WritePropertyName("Arguments");
+            JSONWriter.WriteValue("GPMDP API Tester");
+
+            string openConnectionString = JSONWriter.ToString();
+
+            ws = new WebSocket("ws://localhost:5672");
+            bool acceptedVersion = false;
+
+            ws.OnMessage += (sender, e) =>
+            {
+                //Console.WriteLine("GPMDP says: " + e.Data);
+
+                JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(e.Data);
+                JArray arrayData = new JArray(data);
+
+                foreach (JToken token in arrayData)
+                {
+                    //Console.WriteLine(token.First.Last);
+                    API.Log(API.LogType.Warning, token.First.Last.ToString());
+
+                    if (token.First.Last.ToString().CompareTo("API_VERSION") == 0)
+                    {
+                        String versionNumber = token.Last.Last.ToString();
+
+                        if (versionNumber.Substring(0, versionNumber.IndexOf(".")).CompareTo("1") == 0)
+                        {
+                            //Console.WriteLine("Version match");
+                            acceptedVersion = true;
+                        }
+
+                    }
+                    else if (token.First.Last.ToString().ToLower().CompareTo("track") == 0 && acceptedVersion == true)
+                    {
+                        //Console.WriteLine(token);
+                        currInfo.Title = token.Last.Last.First.Last.ToString();
+                        API.Log(API.LogType.Warning, token.Last.Last.First.Last.ToString());
+                    }
+                }
+
+            };
+
+
+
+            ws.Connect();
+            ws.Send(openConnectionString);
+            //Console.ReadKey(true);
 
             return currInfo;
         }

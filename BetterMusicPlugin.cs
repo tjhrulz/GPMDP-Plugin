@@ -109,7 +109,7 @@ namespace BetterMusicPlugin
                     JToken currentProperty = token.First.Last;
                     JToken currentValue = token.Last.Last;
 
-                    if (currentProperty.ToString().CompareTo("API_VERSION") == 0)
+                    if (currentProperty.ToString().ToUpper().CompareTo("API_VERSION") == 0)
                     {
                         String versionNumber = currentValue.ToString();
 
@@ -153,6 +153,28 @@ namespace BetterMusicPlugin
                             }
                         }
 
+                    }
+                    else if (currentProperty.ToString().ToLower().CompareTo("time") == 0 && acceptedVersion == true)
+                    {
+                        foreach (JProperty trackInfo in currentValue)
+                        {
+                            if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
+                            {
+                                int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                                int trackMinutes = trackSeconds / 60;
+                                trackSeconds = trackSeconds % 60;
+
+                                websocketInfoGPMDP.Position = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                            }
+                            else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
+                            {
+                                int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                                int trackMinutes = trackSeconds / 60;
+                                trackSeconds = trackSeconds % 60;
+
+                                websocketInfoGPMDP.Duration = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                            }
+                        }
                     }
                 }
 
@@ -712,21 +734,21 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].File;
                     }
                     return "";
-            
+
                 case MeasureInfoType.Duration:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Duration;
                     }
                     return "";
-            
+
                 case MeasureInfoType.Position:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Position;
                     }
                     return "";
-            
+
                 case MeasureInfoType.Progress:
                     if (latestInfoSource >= 0)
                     {

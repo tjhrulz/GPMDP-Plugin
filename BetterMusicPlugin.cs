@@ -8,6 +8,8 @@ using WebSocketSharp;
 using Rainmeter;
 using System.Text;
 using System.IO;
+using System.Net;
+using System.Threading;
 
 namespace BetterMusicPlugin
 {
@@ -56,6 +58,7 @@ namespace BetterMusicPlugin
             public string Year { get; set; }
             public string Genre { get; set; }
             public string Cover { get; set; }
+            public string CoverWebAdress { get; set; }
             public string File { get; set; }
             public string Duration { get; set; }
             public string Position { get; set; }
@@ -75,6 +78,8 @@ namespace BetterMusicPlugin
         private const String supportedAPIVersion = "1.1.0";
         private static String openConnectionString;
         private static musicInfo websocketInfoGPMDP = new musicInfo();
+        private static string defaultCoverLocation;
+        private static string coverOutputLocation;
 
         private static void GPMDPWebsocketCreator()
         {
@@ -89,11 +94,11 @@ namespace BetterMusicPlugin
             ws = new WebSocket("ws://localhost:5672");
             bool acceptedVersion = false;
 
-            ws.OnMessage += (sender, e) =>
+            ws.OnMessage += (sender, d) =>
             {
-                //Console.WriteLine("GPMDP says: " + e.Data);
+                //Console.WriteLine("GPMDP says: " + d.Data);
 
-                JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(e.Data);
+                JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
                 JArray arrayData = new JArray(data);
 
                 foreach (JToken token in arrayData)
@@ -139,9 +144,12 @@ namespace BetterMusicPlugin
                             {
                                 websocketInfoGPMDP.Album = trackInfo.First.ToString();
                             }
-                            else if (trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
+                            else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
                             {
-                                websocketInfoGPMDP.Cover = trackInfo.First.ToString();
+                                websocketInfoGPMDP.CoverWebAdress = trackInfo.First.ToString();
+
+                                Thread t = new Thread(() => GetImageFromUrl(websocketInfoGPMDP.CoverWebAdress, coverOutputLocation));
+                                t.Start();
                             }
                         }
 
@@ -155,6 +163,50 @@ namespace BetterMusicPlugin
             ws.Connect();
             ws.Send(openConnectionString);
             //Console.ReadKey(true);
+        }
+
+        private static byte[] ReadStream(Stream input)
+        {
+            byte[] buffer = new byte[1024];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                int read;
+                while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    ms.Write(buffer, 0, read);
+                }
+                return ms.ToArray();
+            }
+        }
+
+        public static void GetImageFromUrl(string url, string filePath)
+        {
+            try
+            {
+                // Create http request
+                HttpWebRequest httpWebRequest = (HttpWebRequest)HttpWebRequest.Create(url);
+                using (HttpWebResponse httpWebReponse = (HttpWebResponse)httpWebRequest.GetResponse())
+                {
+
+                    // Read as stream
+                    using (Stream stream = httpWebReponse.GetResponseStream())
+                    {
+                        Byte[] buffer = ReadStream(stream);
+                        // Make sure the path folder exists
+                        System.IO.Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/SpotifyPlugin");
+                        // Write stream to file
+                        File.WriteAllBytes(filePath, buffer);
+                    }
+                }
+                // Change back to cover image
+                //coverDownloaded = true;
+                websocketInfoGPMDP.Cover = filePath;
+            }
+            catch (Exception e)
+            {
+                API.Log(API.LogType.Error, "Unable to download album art to: " + coverOutputLocation);
+                Console.WriteLine(e);
+            }
         }
 
         internal Measure()
@@ -215,6 +267,8 @@ namespace BetterMusicPlugin
 
                 case "cover":
                     InfoType = MeasureInfoType.Cover;
+                    defaultCoverLocation = api.ReadPath("DefaultPath", "");
+                    coverOutputLocation = api.ReadPath("CoverPath", "");
                     break;
 
                 case "file":

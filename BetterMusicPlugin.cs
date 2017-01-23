@@ -74,7 +74,7 @@ namespace BetterMusicPlugin
         //Initialized to title so that if a bad type is given they will get that and an error
         private MeasureInfoType InfoType = MeasureInfoType.Title;
         private MeasurePlayerType PlayerType = MeasurePlayerType.Dynamic;
-        private static WebSocket ws;
+        public static WebSocket ws;
         private const String supportedAPIVersion = "1.1.0";
         private static String openConnectionString;
         private static musicInfo websocketInfoGPMDP = new musicInfo();
@@ -83,108 +83,111 @@ namespace BetterMusicPlugin
 
         private static void GPMDPWebsocketCreator()
         {
-            //List<Object> requestAccess = new List<Object>();
-            //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
-            //requestAccess.Add(accessObject);
-
-            // API.Log(API.LogType.Warning, requestAccess.ToString());
-
-            //var test = JsonConvert.SerializeObject(requestAccess, Formatting.Indented);
-
-            ws = new WebSocket("ws://localhost:5672");
-            bool acceptedVersion = false;
-
-            ws.OnMessage += (sender, d) =>
+            if (ws == null || ws.IsAlive)
             {
-                //Console.WriteLine("GPMDP says: " + d.Data);
+                //List<Object> requestAccess = new List<Object>();
+                //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
+                //requestAccess.Add(accessObject);
 
-                JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
-                JArray arrayData = new JArray(data);
+                // API.Log(API.LogType.Warning, requestAccess.ToString());
 
-                foreach (JToken token in arrayData)
+                //var test = JsonConvert.SerializeObject(requestAccess, Formatting.Indented);
+
+                ws = new WebSocket("ws://localhost:5672");
+                bool acceptedVersion = false;
+
+                ws.OnMessage += (sender, d) =>
                 {
-                    //Console.WriteLine(token.First.Last);
-                    //API.Log(API.LogType.Notice, token.First.Last.ToString());
+                    //Console.WriteLine("GPMDP says: " + d.Data);
 
-                    JToken currentProperty = token.First.Last;
-                    JToken currentValue = token.Last.Last;
+                    JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
+                    JArray arrayData = new JArray(data);
 
-                    if (currentProperty.ToString().ToUpper().CompareTo("API_VERSION") == 0)
+                    foreach (JToken token in arrayData)
                     {
-                        String versionNumber = currentValue.ToString();
+                        //Console.WriteLine(token.First.Last);
+                        //API.Log(API.LogType.Notice, token.First.Last.ToString());
 
-                        if (versionNumber.Substring(0, versionNumber.IndexOf(".")).CompareTo(supportedAPIVersion.Substring(0, versionNumber.IndexOf("."))) == 0)
+                        JToken currentProperty = token.First.Last;
+                        JToken currentValue = token.Last.Last;
+
+                        if (currentProperty.ToString().ToUpper().CompareTo("API_VERSION") == 0)
                         {
+                            String versionNumber = currentValue.ToString();
+
+                            if (versionNumber.Substring(0, versionNumber.IndexOf(".")).CompareTo(supportedAPIVersion.Substring(0, versionNumber.IndexOf("."))) == 0)
+                            {
                             //Console.WriteLine("Version match");
                             acceptedVersion = true;
-                        }
-                        else
-                        {
+                            }
+                            else
+                            {
                             //TODO Have a rainmeter attribute flag to supress this error and attempt to continue working
                             API.Log(API.LogType.Error, "GPMDP Websocket API version is: " + versionNumber + " this plugin was built for version " + supportedAPIVersion);
-                        }
+                            }
 
-                    }
-                    else if (currentProperty.ToString().ToLower().CompareTo("track") == 0 && acceptedVersion == true)
-                    {
+                        }
+                        else if (currentProperty.ToString().ToLower().CompareTo("track") == 0 && acceptedVersion == true)
+                        {
                         //Console.WriteLine(token);
                         //currInfo.Title = currentValue.First.Last.ToString();
 
                         foreach (JProperty trackInfo in currentValue)
-                        {
-                            if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
                             {
-                                websocketInfoGPMDP.Title = trackInfo.First.ToString();
-                            }
-                            else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
-                            {
-                                websocketInfoGPMDP.Artist = trackInfo.First.ToString();
-                            }
-                            else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
-                            {
-                                websocketInfoGPMDP.Album = trackInfo.First.ToString();
-                            }
-                            else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
-                            {
-                                websocketInfoGPMDP.CoverWebAdress = trackInfo.First.ToString();
+                                if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                                {
+                                    websocketInfoGPMDP.Title = trackInfo.First.ToString();
+                                }
+                                else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
+                                {
+                                    websocketInfoGPMDP.Artist = trackInfo.First.ToString();
+                                }
+                                else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
+                                {
+                                    websocketInfoGPMDP.Album = trackInfo.First.ToString();
+                                }
+                                else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
+                                {
+                                    websocketInfoGPMDP.CoverWebAdress = trackInfo.First.ToString();
 
-                                Thread t = new Thread(() => GetImageFromUrl(websocketInfoGPMDP.CoverWebAdress, coverOutputLocation));
-                                t.Start();
+                                    Thread t = new Thread(() => GetImageFromUrl(websocketInfoGPMDP.CoverWebAdress, coverOutputLocation));
+                                    t.Start();
+                                }
+                            }
+
+                        }
+                        else if (currentProperty.ToString().ToLower().CompareTo("time") == 0 && acceptedVersion == true)
+                        {
+                            foreach (JProperty trackInfo in currentValue)
+                            {
+                                if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
+                                {
+                                    int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                                    int trackMinutes = trackSeconds / 60;
+                                    trackSeconds = trackSeconds % 60;
+
+                                    websocketInfoGPMDP.Position = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                }
+                                else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
+                                {
+                                    int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                                    int trackMinutes = trackSeconds / 60;
+                                    trackSeconds = trackSeconds % 60;
+
+                                    websocketInfoGPMDP.Duration = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                }
                             }
                         }
-
                     }
-                    else if (currentProperty.ToString().ToLower().CompareTo("time") == 0 && acceptedVersion == true)
-                    {
-                        foreach (JProperty trackInfo in currentValue)
-                        {
-                            if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
-                            {
-                                int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-                                int trackMinutes = trackSeconds / 60;
-                                trackSeconds = trackSeconds % 60;
 
-                                websocketInfoGPMDP.Position = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
-                            }
-                            else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
-                            {
-                                int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-                                int trackMinutes = trackSeconds / 60;
-                                trackSeconds = trackSeconds % 60;
-
-                                websocketInfoGPMDP.Duration = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
-                            }
-                        }
-                    }
-                }
-
-            };
+                };
 
 
 
-            ws.Connect();
-            ws.Send(openConnectionString);
-            //Console.ReadKey(true);
+                ws.ConnectAsync();
+                //ws.Send(openConnectionString);
+                //Console.ReadKey(true);
+            }
         }
 
         private static byte[] ReadStream(Stream input)
@@ -237,25 +240,25 @@ namespace BetterMusicPlugin
             latestInfoSource = -1;
             //ws = new WebSocket("ws://localhost:5672");
 
-            var sb = new StringBuilder();
-            var sw = new StringWriter(sb);
-            var JSONWriter = new JsonTextWriter(sw);
+            //var sb = new StringBuilder();
+            //var sw = new StringWriter(sb);
+            //var JSONWriter = new JsonTextWriter(sw);
+            //
+            //JSONWriter.WritePropertyName("Namespace");
+            //JSONWriter.WriteValue("connect");
+            //JSONWriter.WritePropertyName("Method");
+            //JSONWriter.WriteValue("connect");
+            //JSONWriter.WritePropertyName("Arguments");
+            //JSONWriter.WriteValue("GPMDP API Tester");
+            //
+            //openConnectionString = JSONWriter.ToString();
 
-            JSONWriter.WritePropertyName("Namespace");
-            JSONWriter.WriteValue("connect");
-            JSONWriter.WritePropertyName("Method");
-            JSONWriter.WriteValue("connect");
-            JSONWriter.WritePropertyName("Arguments");
-            JSONWriter.WriteValue("GPMDP API Tester");
-
-            openConnectionString = JSONWriter.ToString();
-
-            GPMDPWebsocketCreator();
+            Thread t = new Thread(GPMDPWebsocketCreator);
+            t.Start();
         }
 
         internal virtual void Dispose()
         {
-            ws.Close();
         }
 
         internal virtual void Reload(Rainmeter.API api, ref double maxValue)
@@ -818,6 +821,7 @@ namespace BetterMusicPlugin
         [DllExport]
         public static void Finalize(IntPtr data)
         {
+            Measure.ws.CloseAsync();
             GCHandle.FromIntPtr(data).Free();
 
             if (StringBuffer != IntPtr.Zero)

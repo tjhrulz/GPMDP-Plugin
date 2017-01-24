@@ -80,6 +80,8 @@ namespace BetterMusicPlugin
         private static musicInfo websocketInfoGPMDP = new musicInfo();
         private static string defaultCoverLocation;
         private static string coverOutputLocation;
+        private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
+        private static bool websocketState = false;
 
         enum GPMInfoSupported
         {
@@ -89,10 +91,12 @@ namespace BetterMusicPlugin
             playstate
         }
 
-        private static void GPMDPWebsocketCreator()
+        public static void GPMDPWebsocketCreator()
         {
+            API.Log(API.LogType.Notice, "GPMDPWebsocketCreator called");
             if (ws == null || ws.IsAlive)
             {
+                API.Log(API.LogType.Notice, "New Scoket");
                 //List<Object> requestAccess = new List<Object>();
                 //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
                 //requestAccess.Add(accessObject);
@@ -148,6 +152,7 @@ namespace BetterMusicPlugin
                                     if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
                                     {
                                         websocketInfoGPMDP.Title = trackInfo.First.ToString();
+                                        API.Log(API.LogType.Notice, trackInfo.First.ToString());
                                     }
                                     else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
                                     {
@@ -195,6 +200,8 @@ namespace BetterMusicPlugin
 
 
                 API.Log(API.LogType.Notice, "Opening Socket");
+                ws.OnClose += (sender, d) => websocketState = false;
+                ws.OnOpen += (sender, d) => websocketState = true;
                 ws.ConnectAsync();
                 //ws.Send(openConnectionString);
                 //Console.ReadKey(true);
@@ -264,8 +271,10 @@ namespace BetterMusicPlugin
             //
             //openConnectionString = JSONWriter.ToString();
 
-            Thread t = new Thread(GPMDPWebsocketCreator);
-            t.Start();
+            if (GPMInitThread.ThreadState == ThreadState.Unstarted)
+            {
+                GPMInitThread.Start();
+            }
         }
 
         internal virtual void Dispose()
@@ -464,9 +473,12 @@ namespace BetterMusicPlugin
         //Functions specific to GPMDP player
         private static Boolean isGPMDPRunning()
         {
-            System.Diagnostics.Process[] GooglePlayMusicStatus = System.Diagnostics.Process.GetProcessesByName("Google Play Music Desktop Player");
+            if (websocketState == false)
+            {
+                ws.ConnectAsync();
+            }
 
-            return (GooglePlayMusicStatus.Length > 0) ? true : false;
+            return websocketState;
         }
         private static musicInfo getGPMDPInfo()
         {
@@ -480,9 +492,10 @@ namespace BetterMusicPlugin
         //Functions specific to Soundnode player
         private static Boolean isSoundnodeRunning()
         {
-            System.Diagnostics.Process[] SoundnodeStatus = System.Diagnostics.Process.GetProcessesByName("Soundnode");
+            //System.Diagnostics.Process[] SoundnodeStatus = System.Diagnostics.Process.GetProcessesByName("Soundnode");
 
-            return (SoundnodeStatus.Length > 0) ? true : false;
+            //return (SoundnodeStatus.Length > 0) ? true : false;
+            return false;
         }
         private static musicInfo getSoundnodeInfo()
         {
@@ -827,6 +840,7 @@ namespace BetterMusicPlugin
         public static void Initialize(ref IntPtr data, IntPtr rm)
         {
             data = GCHandle.ToIntPtr(GCHandle.Alloc(new Measure()));
+
         }
 
         [DllExport]

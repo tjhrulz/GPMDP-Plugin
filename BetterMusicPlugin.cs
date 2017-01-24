@@ -81,6 +81,14 @@ namespace BetterMusicPlugin
         private static string defaultCoverLocation;
         private static string coverOutputLocation;
 
+        enum GPMInfoSupported
+        {
+            api_version,
+            track,
+            time,
+            playstate
+        }
+
         private static void GPMDPWebsocketCreator()
         {
             if (ws == null || ws.IsAlive)
@@ -98,92 +106,95 @@ namespace BetterMusicPlugin
 
                 ws.OnMessage += (sender, d) =>
                 {
-                    //Console.WriteLine("GPMDP says: " + d.Data);
+                    String type = d.Data.Substring(12, d.Data.IndexOf(",") - 13);
+                    GPMInfoSupported typeEnum;
 
-                    JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
-                    JArray arrayData = new JArray(data);
-
-                    foreach (JToken token in arrayData)
+                    if (Enum.TryParse(type.ToLower(), out typeEnum))
                     {
-                        //Console.WriteLine(token.First.Last);
-                        //API.Log(API.LogType.Notice, token.First.Last.ToString());
+                        JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
+                        JArray arrayData = new JArray(data);
 
-                        JToken currentProperty = token.First.Last;
-                        JToken currentValue = token.Last.Last;
-
-                        if (currentProperty.ToString().ToUpper().CompareTo("API_VERSION") == 0)
+                        foreach (JToken token in arrayData)
                         {
-                            String versionNumber = currentValue.ToString();
+                            //Console.WriteLine(token.First.Last);
+                            //API.Log(API.LogType.Notice, token.First.Last.ToString());
 
-                            if (versionNumber.Substring(0, versionNumber.IndexOf(".")).CompareTo(supportedAPIVersion.Substring(0, versionNumber.IndexOf("."))) == 0)
+                            JToken currentProperty = token.First.Last;
+                            JToken currentValue = token.Last.Last;
+
+                            if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.api_version.ToString()) == 0)
                             {
-                            //Console.WriteLine("Version match");
-                            acceptedVersion = true;
+                                String versionNumber = currentValue.ToString();
+
+                                if (versionNumber.Substring(0, versionNumber.IndexOf(".")).CompareTo(supportedAPIVersion.Substring(0, versionNumber.IndexOf("."))) == 0)
+                                {
+                                    //Console.WriteLine("Version match");
+                                    acceptedVersion = true;
+                                }
+                                else
+                                {
+                                    //TODO Have a rainmeter attribute flag to supress this error and attempt to continue working
+                                    //API.Log(API.LogType.Error, "GPMDP Websocket API version is: " + versionNumber + " this plugin was built for version " + supportedAPIVersion);
+                                }
+
                             }
-                            else
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.track.ToString()) == 0 && acceptedVersion == true)
                             {
-                            //TODO Have a rainmeter attribute flag to supress this error and attempt to continue working
-                            API.Log(API.LogType.Error, "GPMDP Websocket API version is: " + versionNumber + " this plugin was built for version " + supportedAPIVersion);
+                                //Console.WriteLine(token);
+                                //currInfo.Title = currentValue.First.Last.ToString();
+
+                                foreach (JProperty trackInfo in currentValue)
+                                {
+                                    if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                                    {
+                                        websocketInfoGPMDP.Title = trackInfo.First.ToString();
+                                    }
+                                    else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
+                                    {
+                                        websocketInfoGPMDP.Artist = trackInfo.First.ToString();
+                                    }
+                                    else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
+                                    {
+                                        websocketInfoGPMDP.Album = trackInfo.First.ToString();
+                                    }
+                                    else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
+                                    {
+                                        websocketInfoGPMDP.CoverWebAdress = trackInfo.First.ToString();
+
+                                        Thread t = new Thread(() => GetImageFromUrl(websocketInfoGPMDP.CoverWebAdress, coverOutputLocation));
+                                        t.Start();
+                                    }
+                                }
+
                             }
-
-                        }
-                        else if (currentProperty.ToString().ToLower().CompareTo("track") == 0 && acceptedVersion == true)
-                        {
-                        //Console.WriteLine(token);
-                        //currInfo.Title = currentValue.First.Last.ToString();
-
-                        foreach (JProperty trackInfo in currentValue)
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.time.ToString()) == 0 && acceptedVersion == true)
                             {
-                                if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                                foreach (JProperty trackInfo in currentValue)
                                 {
-                                    websocketInfoGPMDP.Title = trackInfo.First.ToString();
-                                }
-                                else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
-                                {
-                                    websocketInfoGPMDP.Artist = trackInfo.First.ToString();
-                                }
-                                else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
-                                {
-                                    websocketInfoGPMDP.Album = trackInfo.First.ToString();
-                                }
-                                else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
-                                {
-                                    websocketInfoGPMDP.CoverWebAdress = trackInfo.First.ToString();
+                                    if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
+                                    {
+                                        int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                                        int trackMinutes = trackSeconds / 60;
+                                        trackSeconds = trackSeconds % 60;
 
-                                    Thread t = new Thread(() => GetImageFromUrl(websocketInfoGPMDP.CoverWebAdress, coverOutputLocation));
-                                    t.Start();
-                                }
-                            }
+                                        websocketInfoGPMDP.Position = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                    }
+                                    else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
+                                    {
+                                        int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                                        int trackMinutes = trackSeconds / 60;
+                                        trackSeconds = trackSeconds % 60;
 
-                        }
-                        else if (currentProperty.ToString().ToLower().CompareTo("time") == 0 && acceptedVersion == true)
-                        {
-                            foreach (JProperty trackInfo in currentValue)
-                            {
-                                if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
-                                {
-                                    int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-                                    int trackMinutes = trackSeconds / 60;
-                                    trackSeconds = trackSeconds % 60;
-
-                                    websocketInfoGPMDP.Position = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
-                                }
-                                else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
-                                {
-                                    int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-                                    int trackMinutes = trackSeconds / 60;
-                                    trackSeconds = trackSeconds % 60;
-
-                                    websocketInfoGPMDP.Duration = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                        websocketInfoGPMDP.Duration = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                    }
                                 }
                             }
                         }
                     }
-
                 };
 
 
-
+                API.Log(API.LogType.Notice, "Opening Socket");
                 ws.ConnectAsync();
                 //ws.Send(openConnectionString);
                 //Console.ReadKey(true);
@@ -498,7 +509,7 @@ namespace BetterMusicPlugin
             if (PlayerType == MeasurePlayerType.Dynamic)
             {
                 int newSongInfoSource = -1;
-                for (int i = 0; i < Enum.GetNames(typeof(MeasurePlayerType)).Length; i++)
+                for (int i = 0; i < Enum.GetNames(typeof(MeasurePlayerType)).Length -1; i++)
                 {
                     //if (i == (int) MeasurePlayerType.AIMP)
                     //{

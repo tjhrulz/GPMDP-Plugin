@@ -165,10 +165,9 @@ namespace BetterMusicPlugin
                                     }
                                     else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
                                     {
-                                        websocketInfoGPMDP.CoverWebAddress = trackInfo.First.ToString();
                                         websocketInfoGPMDP.Cover = defaultCoverLocation;
 
-                                        Thread t = new Thread(() => GetImageFromUrl(websocketInfoGPMDP.CoverWebAddress, coverOutputLocation));
+                                        Thread t = new Thread(() => GetImageFromUrl(trackInfo.First.ToString(), coverOutputLocation));
                                         t.Start();
                                     }
                                 }
@@ -247,6 +246,7 @@ namespace BetterMusicPlugin
                 // Change back to cover image
                 //coverDownloaded = true;
                 websocketInfoGPMDP.Cover = filePath;
+                websocketInfoGPMDP.CoverWebAddress = url;
             }
             catch (Exception e)
             {

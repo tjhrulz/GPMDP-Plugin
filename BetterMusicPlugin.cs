@@ -25,7 +25,6 @@ namespace BetterMusicPlugin
             Genre,
             Cover,
             CoverWebAddress,
-            File,
             Duration,
             Position,
             Progress,
@@ -67,7 +66,7 @@ namespace BetterMusicPlugin
             public string Rating { get; set; }
             public string Repeat { get; set; }
             public string Shuffle { get; set; }
-            public string State { get; set; }
+            public int State { get; set; }
             public string Status { get; set; }
             public string Volume { get; set; }
         }
@@ -77,27 +76,26 @@ namespace BetterMusicPlugin
         private MeasurePlayerType PlayerType = MeasurePlayerType.Dynamic;
         public static WebSocket ws;
         private const String supportedAPIVersion = "1.1.0";
-        private static String openConnectionString;
         private static musicInfo websocketInfoGPMDP = new musicInfo();
         private static string defaultCoverLocation;
         private static string coverOutputLocation;
         private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
         private static bool websocketState = false;
+        private static bool remoteState = false;
 
         enum GPMInfoSupported
         {
             api_version,
             track,
             time,
-            playstate
+            playstate,
+            connect
         }
 
         public static void GPMDPWebsocketCreator()
         {
-            API.Log(API.LogType.Notice, "GPMDPWebsocketCreator called");
             if (ws == null || ws.IsAlive)
             {
-                API.Log(API.LogType.Notice, "New Scoket");
                 //List<Object> requestAccess = new List<Object>();
                 //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
                 //requestAccess.Add(accessObject);
@@ -113,6 +111,7 @@ namespace BetterMusicPlugin
                 {
                     String type = d.Data.Substring(12, d.Data.IndexOf(",") - 13);
                     GPMInfoSupported typeEnum;
+                    Console.WriteLine(type);
 
                     if (Enum.TryParse(type.ToLower(), out typeEnum))
                     {
@@ -143,36 +142,6 @@ namespace BetterMusicPlugin
                                 }
 
                             }
-                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.track.ToString()) == 0 && acceptedVersion == true)
-                            {
-                                //Console.WriteLine(token);
-                                //currInfo.Title = currentValue.First.Last.ToString();
-
-                                foreach (JProperty trackInfo in currentValue)
-                                {
-                                    if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
-                                    {
-                                        websocketInfoGPMDP.Title = trackInfo.First.ToString();
-                                        API.Log(API.LogType.Notice, trackInfo.First.ToString());
-                                    }
-                                    else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
-                                    {
-                                        websocketInfoGPMDP.Artist = trackInfo.First.ToString();
-                                    }
-                                    else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
-                                    {
-                                        websocketInfoGPMDP.Album = trackInfo.First.ToString();
-                                    }
-                                    else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
-                                    {
-                                        websocketInfoGPMDP.Cover = defaultCoverLocation;
-
-                                        Thread t = new Thread(() => GetImageFromUrl(trackInfo.First.ToString(), coverOutputLocation));
-                                        t.Start();
-                                    }
-                                }
-
-                            }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.time.ToString()) == 0 && acceptedVersion == true)
                             {
                                 foreach (JProperty trackInfo in currentValue)
@@ -195,16 +164,51 @@ namespace BetterMusicPlugin
                                     }
                                 }
                             }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.track.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                foreach (JProperty trackInfo in currentValue)
+                                {
+                                    if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                                    {
+                                        websocketInfoGPMDP.Title = trackInfo.First.ToString();
+                                    }
+                                    else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
+                                    {
+                                        websocketInfoGPMDP.Artist = trackInfo.First.ToString();
+                                    }
+                                    else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
+                                    {
+                                        websocketInfoGPMDP.Album = trackInfo.First.ToString();
+                                    }
+                                    else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
+                                    {
+                                        websocketInfoGPMDP.Cover = defaultCoverLocation;
+
+                                        Thread t = new Thread(() => GetImageFromUrl(trackInfo.First.ToString(), coverOutputLocation));
+                                        t.Start();
+                                    }
+                                }
+                            }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.playstate.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                websocketInfoGPMDP.State = Convert.ToBoolean(currentValue) ? 1 : 2;
+                            }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.connect.ToString()) == 0)
+                            {
+                                String connectionInfo = currentValue.ToString();
+
+                                Console.WriteLine("cInfo:" + connectionInfo);
+                                Console.WriteLine(currentProperty.ToString());
+                            }
                         }
                     }
                 };
 
 
-                API.Log(API.LogType.Notice, "Opening Socket");
                 ws.OnClose += (sender, d) => websocketState = false;
                 ws.OnOpen += (sender, d) => websocketState = true;
+
                 ws.ConnectAsync();
-                //ws.Send(openConnectionString);
                 //Console.ReadKey(true);
             }
         }
@@ -323,10 +327,6 @@ namespace BetterMusicPlugin
                     InfoType = MeasureInfoType.CoverWebAddress;
                     break;
 
-                case "file":
-                    InfoType = MeasureInfoType.File;
-                    break;
-
                 case "duration":
                     InfoType = MeasureInfoType.Duration;
                     break;
@@ -349,10 +349,6 @@ namespace BetterMusicPlugin
 
                 case "shuffle":
                     InfoType = MeasureInfoType.Shuffle;
-                    break;
-
-                case "state":
-                    InfoType = MeasureInfoType.State;
                     break;
 
                 case "status":
@@ -480,10 +476,25 @@ namespace BetterMusicPlugin
         //Functions specific to GPMDP player
         private static Boolean isGPMDPRunning()
         {
-            if (websocketState == false)
+            if (websocketState == false && ws != null)
             {
                 ws.ConnectAsync();
             }
+            //if (ws != null && ws.ReadyState == WebSocketState.Open && remoteState == false)
+            //{
+            //
+            //    String ConnectionString = "{\n";
+            //    ConnectionString += "\"namespace\": \"connect\",\n";
+            //    ConnectionString += "\"method\": \"connect\",\n";
+            //    ConnectionString += "\"arguments\": \"[\"GPMDP API Tester\"]\"\n";
+            //    ConnectionString += "}";
+            //
+            //    //ConnectionString += "\"arguments\": \"[\"GPMDP API Tester\", \"3867\"]\"\n";
+            //
+            //    Console.WriteLine(ConnectionString);
+            //    ws.SendAsync(ConnectionString, connection => GPMDPPlayPause());
+            //    remoteState = true;
+            //}
 
             return websocketState;
         }
@@ -494,6 +505,30 @@ namespace BetterMusicPlugin
             currInfo = websocketInfoGPMDP;
 
             return currInfo;
+        }
+        private static void GPMDPPlayPause()
+        {
+            String playPauseString = "{\n";
+            playPauseString += "\"namespace\": \"playback\",\n";
+            playPauseString += "\"method\": \"playPause\"\n";
+            playPauseString += "}";
+            ws.SendAsync(playPauseString, null);
+        }
+        private static void GPMDPForward()
+        {
+            String forwardString = "{\n";
+            forwardString += "\"namespace\": \"playback\",\n";
+            forwardString += "\"method\": \"forward\"\n";
+            forwardString += "}";
+            ws.SendAsync(forwardString, null);
+        }
+        private static void GPMDPPrevious()
+        {
+            String previousString = "{\n";
+            previousString += "\"namespace\": \"playback\",\n";
+            previousString += "\"method\": \"rewind\"\n";
+            previousString += "}";
+            ws.SendAsync(previousString, null);
         }
 
         //Functions specific to Soundnode player
@@ -706,6 +741,16 @@ namespace BetterMusicPlugin
                 }
             }
 
+            switch (InfoType)
+            {
+                case MeasureInfoType.State:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].State;
+                    }
+                    return 0;
+            }
+
             return 0.0;
         }
 
@@ -769,13 +814,6 @@ namespace BetterMusicPlugin
                     }
                     return "";
 
-                case MeasureInfoType.File:
-                    if (latestInfoSource >= 0)
-                    {
-                        return latestInfo[latestInfoSource].File;
-                    }
-                    return "";
-
                 case MeasureInfoType.Duration:
                     if (latestInfoSource >= 0)
                     {
@@ -815,13 +853,6 @@ namespace BetterMusicPlugin
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Shuffle;
-                    }
-                    return "";
-            
-                case MeasureInfoType.State:
-                    if (latestInfoSource >= 0)
-                    {
-                        return latestInfo[latestInfoSource].State;
                     }
                     return "";
             

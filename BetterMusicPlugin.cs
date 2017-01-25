@@ -24,6 +24,7 @@ namespace BetterMusicPlugin
             Year,
             Genre,
             Cover,
+            CoverWebAddress,
             File,
             Duration,
             Position,
@@ -58,7 +59,7 @@ namespace BetterMusicPlugin
             public string Year { get; set; }
             public string Genre { get; set; }
             public string Cover { get; set; }
-            public string CoverWebAdress { get; set; }
+            public string CoverWebAddress { get; set; }
             public string File { get; set; }
             public string Duration { get; set; }
             public string Position { get; set; }
@@ -164,9 +165,10 @@ namespace BetterMusicPlugin
                                     }
                                     else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
                                     {
-                                        websocketInfoGPMDP.CoverWebAdress = trackInfo.First.ToString();
+                                        websocketInfoGPMDP.CoverWebAddress = trackInfo.First.ToString();
+                                        websocketInfoGPMDP.Cover = defaultCoverLocation;
 
-                                        Thread t = new Thread(() => GetImageFromUrl(websocketInfoGPMDP.CoverWebAdress, coverOutputLocation));
+                                        Thread t = new Thread(() => GetImageFromUrl(websocketInfoGPMDP.CoverWebAddress, coverOutputLocation));
                                         t.Start();
                                     }
                                 }
@@ -222,6 +224,7 @@ namespace BetterMusicPlugin
             }
         }
 
+        //Note before calling this you should set websocketInfoGPMDP.Cover to the default cover location to help mitagate OnChange not being called for measures that have a low update rate, also launch this on a different thread
         public static void GetImageFromUrl(string url, string filePath)
         {
             try
@@ -314,6 +317,10 @@ namespace BetterMusicPlugin
                     InfoType = MeasureInfoType.Cover;
                     defaultCoverLocation = api.ReadPath("DefaultPath", "");
                     coverOutputLocation = api.ReadPath("CoverPath", "");
+                    break;
+
+                case "coverwebaddress":
+                    InfoType = MeasureInfoType.CoverWebAddress;
                     break;
 
                 case "file":
@@ -747,14 +754,21 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Genre;
                     }
                     return "";
-            
+
                 case MeasureInfoType.Cover:
                     if (latestInfoSource >= 0)
                     {
                         return latestInfo[latestInfoSource].Cover;
                     }
                     return "";
-            
+
+                case MeasureInfoType.CoverWebAddress:
+                    if (latestInfoSource >= 0)
+                    {
+                        return latestInfo[latestInfoSource].CoverWebAddress;
+                    }
+                    return "";
+
                 case MeasureInfoType.File:
                     if (latestInfoSource >= 0)
                     {

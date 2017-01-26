@@ -81,7 +81,7 @@ namespace BetterMusicPlugin
         private static string coverOutputLocation;
         private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
         private static bool websocketState = false;
-        private static bool remoteState = false;
+        private static string authcode = "58e55e70-74bb-4d00-8b77-d624581d6ab6";
 
         enum GPMInfoSupported
         {
@@ -111,7 +111,8 @@ namespace BetterMusicPlugin
                 {
                     String type = d.Data.Substring(12, d.Data.IndexOf(",") - 13);
                     GPMInfoSupported typeEnum;
-                    Console.WriteLine(type);
+
+                    API.Log(API.LogType.Warning, type);
 
                     if (Enum.TryParse(type.ToLower(), out typeEnum))
                     {
@@ -120,9 +121,6 @@ namespace BetterMusicPlugin
 
                         foreach (JToken token in arrayData)
                         {
-                            //Console.WriteLine(token.First.Last);
-                            //API.Log(API.LogType.Notice, token.First.Last.ToString());
-
                             JToken currentProperty = token.First.Last;
                             JToken currentValue = token.Last.Last;
 
@@ -132,13 +130,12 @@ namespace BetterMusicPlugin
 
                                 if (versionNumber.Substring(0, versionNumber.IndexOf(".")).CompareTo(supportedAPIVersion.Substring(0, versionNumber.IndexOf("."))) == 0)
                                 {
-                                    //Console.WriteLine("Version match");
                                     acceptedVersion = true;
                                 }
                                 else
                                 {
                                     //TODO Have a rainmeter attribute flag to supress this error and attempt to continue working
-                                    //API.Log(API.LogType.Error, "GPMDP Websocket API version is: " + versionNumber + " this plugin was built for version " + supportedAPIVersion);
+                                    API.Log(API.LogType.Error, "GPMDP Websocket API version is: " + versionNumber + " this plugin was built for version " + supportedAPIVersion);
                                 }
 
                             }
@@ -180,7 +177,7 @@ namespace BetterMusicPlugin
                                     {
                                         websocketInfoGPMDP.Album = trackInfo.First.ToString();
                                     }
-                                    else if (coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
+                                    else if (trackInfo.First.ToString().Length != 0 && coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
                                     {
                                         websocketInfoGPMDP.Cover = defaultCoverLocation;
 
@@ -196,9 +193,10 @@ namespace BetterMusicPlugin
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.connect.ToString()) == 0)
                             {
                                 String connectionInfo = currentValue.ToString();
-
-                                Console.WriteLine("cInfo:" + connectionInfo);
-                                Console.WriteLine(currentProperty.ToString());
+                                if (connectionInfo.ToUpper().CompareTo("CODE_REQUIRED") == 0)
+                                {
+                                    API.Log(API.LogType.Warning, "Connection code bad, please recreate code");
+                                }
                             }
                         }
                     }
@@ -206,8 +204,12 @@ namespace BetterMusicPlugin
 
 
                 ws.OnClose += (sender, d) => websocketState = false;
-                ws.OnOpen += (sender, d) => websocketState = true;
-
+                ws.OnOpen += (sender, d) =>
+                {
+                    API.Log(API.LogType.Notice, "Sending remote code " + authcode);
+                    sendGPMDPAuthCode();
+                    websocketState = true;
+                };
                 ws.ConnectAsync();
                 //Console.ReadKey(true);
             }
@@ -480,21 +482,6 @@ namespace BetterMusicPlugin
             {
                 ws.ConnectAsync();
             }
-            //if (ws != null && ws.ReadyState == WebSocketState.Open && remoteState == false)
-            //{
-            //
-            //    String ConnectionString = "{\n";
-            //    ConnectionString += "\"namespace\": \"connect\",\n";
-            //    ConnectionString += "\"method\": \"connect\",\n";
-            //    ConnectionString += "\"arguments\": \"[\"GPMDP API Tester\"]\"\n";
-            //    ConnectionString += "}";
-            //
-            //    //ConnectionString += "\"arguments\": \"[\"GPMDP API Tester\", \"3867\"]\"\n";
-            //
-            //    Console.WriteLine(ConnectionString);
-            //    ws.SendAsync(ConnectionString, connection => GPMDPPlayPause());
-            //    remoteState = true;
-            //}
 
             return websocketState;
         }
@@ -506,6 +493,19 @@ namespace BetterMusicPlugin
 
             return currInfo;
         }
+        private static int sendGPMDPAuthCode()
+        {
+            String ConnectionString = "{\n";
+            ConnectionString += "\"namespace\": \"connect\",\n";
+            ConnectionString += "\"method\": \"connect\",\n";
+            ConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + authcode + "\"]\n";
+            ConnectionString += "}";
+
+            ws.SendAsync(ConnectionString, null);
+
+            return 0;
+        }
+
         private static void GPMDPPlayPause()
         {
             String playPauseString = "{\n";
@@ -556,6 +556,34 @@ namespace BetterMusicPlugin
             musicInfo currInfo = new musicInfo { Title = "Test ChromeMusicInfoXposed Song", Artist = "Test ChromeMusicInfoXposed Artist" };
 
             return currInfo;
+        }
+
+        internal void ExecuteBang(string args)
+        {
+            string a = args.ToLowerInvariant();
+            if (a.Equals("playpause"))
+            {
+                API.Log(API.LogType.Notice, "playpause command");
+                GPMDPPlayPause();
+            }
+            else if (a.Equals("next"))
+            {
+                GPMDPForward();
+            }
+            else if (a.Equals("previous"))
+            {
+                GPMDPPrevious();
+            }
+            else if (a.Equals("play"))
+            {
+            }
+            else if (a.Equals("pause"))
+            {
+            }
+            else
+            {
+                API.Log(API.LogType.Error, "BetterMusic.dll: Invalid bang " + args);
+            }
         }
 
         internal virtual double Update()
@@ -689,7 +717,7 @@ namespace BetterMusicPlugin
                     }
                     else
                     {
-                        System.Console.WriteLine("Media player defined but not handled");
+                        API.Log(API.LogType.Error, "Media player defined but not handled");
                     }
                 }
                 if (newSongInfoSource >= 0)
@@ -737,7 +765,7 @@ namespace BetterMusicPlugin
                 }
                 else
                 {
-                    System.Console.WriteLine("Media player defined but not handled");
+                    API.Log(API.LogType.Error, "Media player defined but not handled");
                 }
             }
 
@@ -932,6 +960,12 @@ namespace BetterMusicPlugin
             }
 
             return StringBuffer;
+        }
+        [DllExport]
+        public static void ExecuteBang(IntPtr data, IntPtr args)
+        {
+            Measure measure = (Measure)GCHandle.FromIntPtr(data).Target;
+            measure.ExecuteBang(Marshal.PtrToStringUni(args));
         }
     }
 }

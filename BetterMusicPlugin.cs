@@ -112,7 +112,7 @@ namespace BetterMusicPlugin
                     String type = d.Data.Substring(12, d.Data.IndexOf(",") - 13);
                     GPMInfoSupported typeEnum;
 
-                    API.Log(API.LogType.Warning, type);
+                    //API.Log(API.LogType.Warning, type);
 
                     if (Enum.TryParse(type.ToLower(), out typeEnum))
                     {
@@ -351,6 +351,10 @@ namespace BetterMusicPlugin
 
                 case "shuffle":
                     InfoType = MeasureInfoType.Shuffle;
+                    break;
+
+                case "state":
+                    InfoType = MeasureInfoType.State;
                     break;
 
                 case "status":

@@ -567,7 +567,6 @@ namespace BetterMusicPlugin
             string a = args.ToLowerInvariant();
             if (a.Equals("playpause"))
             {
-                API.Log(API.LogType.Notice, "playpause command");
                 GPMDPPlayPause();
             }
             else if (a.Equals("next"))
@@ -901,10 +900,6 @@ namespace BetterMusicPlugin
                         return latestInfo[latestInfoSource].Volume;
                     }
                     return "";
-            
-                default:
-                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: Type not valid");
-                    break;
             }
             return null;
         }

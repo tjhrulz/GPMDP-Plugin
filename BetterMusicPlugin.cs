@@ -216,6 +216,7 @@ namespace BetterMusicPlugin
                     websocketState = true;
                     if (authcode.Length > 0)
                     {
+                        API.Log(API.LogType.Warning, "Sending authcode onopen");
                         sendGPMDPAuthCode(authcode);
                     }
                 };
@@ -409,12 +410,13 @@ namespace BetterMusicPlugin
 
             if (authcode.Length == 0)
             {
-                char[] authCodeCharArr = new char[64];
-                GetPrivateProfileString("BetterMusic", "AuthCode", "", authCodeCharArr, 64, rainmeterFileSettingsLocation);
-                authcode = new String(authCodeCharArr);
+                char[] authchar = new char[36];
+                GetPrivateProfileString("BetterMusic", "AuthCode", "", authchar, 37, rainmeterFileSettingsLocation);
+                authcode = new String(authchar);
                 API.Log(API.LogType.Notice, "Read authcode is:" + authcode);
                 if (authcode.Length > 0)
                 {
+                    API.Log(API.LogType.Warning, "Sending authcode onrefresh");
                     sendGPMDPAuthCode(authcode);
                 }
                 else
@@ -567,15 +569,22 @@ namespace BetterMusicPlugin
             API.Log(API.LogType.Notice, "Checking authcode");
             if (ws != null && ws.ReadyState == WebSocketState.Open)
             {
-                API.Log(API.LogType.Notice, "Sending auth code:" + authcode);
+                String tempcode = "5937d382-1881-4c11-96ef-2d11baf6dfcc";
+                API.Log(API.LogType.Notice, authcode.Length + "Sending auth code:" + authcode);
+                API.Log(API.LogType.Notice, tempcode.Length + "diff" + authcode.CompareTo(tempcode).ToString());
 
-                String ConnectionString = "{\n";
+                        String ConnectionString = "{\n";
                 ConnectionString += "\"namespace\": \"connect\",\n";
                 ConnectionString += "\"method\": \"connect\",\n";
                 ConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + authcode + "\"]\n";
                 ConnectionString += "}";
 
-                ws.SendAsync(ConnectionString, connection => Console.WriteLine("Authorized!"));
+                //for(int i = 0; i < authchar.Length; i++)
+                //{
+                //    API.Log(API.LogType.Notice, "authchar:" + authchar[i]);
+                //}
+
+                ws.SendAsync(ConnectionString, null);
                 authState = true;
             }
         }

@@ -12,6 +12,28 @@ namespace BetterMusicPlugin
 {
     internal class Measure
     {
+        class musicInfo
+        {
+            public string Artist { get; set; }
+            public string Album { get; set; }
+            public string Title { get; set; }
+            public string Number { get; set; }
+            public string Year { get; set; }
+            public string Genre { get; set; }
+            public string Cover { get; set; }
+            public string CoverWebAddress { get; set; }
+            public string File { get; set; }
+            public string Duration { get; set; }
+            public string Position { get; set; }
+            public string Progress { get; set; }
+            public string Rating { get; set; }
+            public string Repeat { get; set; }
+            public string Shuffle { get; set; }
+            public int State { get; set; }
+            public string Status { get; set; }
+            public string Volume { get; set; }
+        }
+
         enum MeasureInfoType
         {
             Artist,
@@ -40,37 +62,13 @@ namespace BetterMusicPlugin
             ChromeMusicInfoXposed,
             Dynamic
         }
-
-        //To add a new player add the name here and add the function to handle its info and a call for its info in the Update functions loop
-        //private static MeasurePlayerType[] allSupportedPlayers = { MeasurePlayerType.GPMDP, MeasurePlayerType.Soundnode, MeasurePlayerType.ChromeMusicInfoXposed };
+        
         musicInfo[] latestInfo;
         int latestInfoSource;
+        private MeasureInfoType InfoType;
+        private MeasurePlayerType PlayerType;
 
-        class musicInfo
-        {
-            public string Artist { get; set; }
-            public string Album { get; set; }
-            public string Title { get; set; }
-            public string Number { get; set; }
-            public string Year { get; set; }
-            public string Genre { get; set; }
-            public string Cover { get; set; }
-            public string CoverWebAddress { get; set; }
-            public string File { get; set; }
-            public string Duration { get; set; }
-            public string Position { get; set; }
-            public string Progress { get; set; }
-            public string Rating { get; set; }
-            public string Repeat { get; set; }
-            public string Shuffle { get; set; }
-            public int State { get; set; }
-            public string Status { get; set; }
-            public string Volume { get; set; }
-        }
 
-        //Initialized to title so that if a bad type is given they will get that and an error
-        private MeasureInfoType InfoType = MeasureInfoType.Title;
-        private MeasurePlayerType PlayerType = MeasurePlayerType.Dynamic;
         public static WebSocket ws;
         private const String supportedAPIVersion = "1.1.0";
         private static musicInfo websocketInfoGPMDP = new musicInfo();
@@ -81,7 +79,6 @@ namespace BetterMusicPlugin
         private static bool authState = false;
         private static string authcode = "";
         private static string rainmeterFileSettingsLocation = "";
-        //58e55e70-74bb-4d00-8b77-d624581d6ab6
 
         enum GPMInfoSupported
         {
@@ -96,14 +93,6 @@ namespace BetterMusicPlugin
         {
             if (ws == null || !ws.IsAlive)
             {
-                //List<Object> requestAccess = new List<Object>();
-                //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
-                //requestAccess.Add(accessObject);
-
-                // API.Log(API.LogType.Warning, requestAccess.ToString());
-
-                //var test = JsonConvert.SerializeObject(requestAccess, Formatting.Indented);
-
                 ws = new WebSocket("ws://localhost:5672");
                 bool acceptedVersion = false;
 
@@ -111,8 +100,6 @@ namespace BetterMusicPlugin
                 {
                     String type = d.Data.Substring(12, d.Data.IndexOf(",") - 13);
                     GPMInfoSupported typeEnum;
-
-                    //API.Log(API.LogType.Warning, type);
 
                     if (Enum.TryParse(type.ToLower(), out typeEnum))
                     {
@@ -195,11 +182,11 @@ namespace BetterMusicPlugin
                                 String connectionInfo = currentValue.ToString();
                                 if (connectionInfo.ToUpper().CompareTo("CODE_REQUIRED") == 0)
                                 {
-                                    API.Log(API.LogType.Warning, "Connection code bad, please recreate code");
+                                    API.Log(API.LogType.Warning, "Connection code bad, please send pin code using a bang as folows ''keycode ####''");
                                 }
                                 else
                                 {
-                                    API.Log(API.LogType.Warning, "New auth code:" + connectionInfo);
+                                    API.Log(API.LogType.Warning, "New authorization code generated and saved:" + connectionInfo);
                                     sendGPMDPAuthCode(connectionInfo);
                                     WritePrivateProfileString("BetterMusic", "AuthCode", connectionInfo, rainmeterFileSettingsLocation);
                                     authcode = connectionInfo;
@@ -216,7 +203,6 @@ namespace BetterMusicPlugin
                     websocketState = true;
                     if (authcode.Length > 0)
                     {
-                        API.Log(API.LogType.Warning, "Sending authcode onopen");
                         sendGPMDPAuthCode(authcode);
                     }
                 };
@@ -302,7 +288,7 @@ namespace BetterMusicPlugin
 
         internal virtual void Reload(Rainmeter.API api, ref double maxValue)
         {
-            string infoType = api.ReadString("PlayerInfo", "title");
+            string infoType = api.ReadString("PlayerInfo", "");
             switch (infoType.ToLowerInvariant())
             {
                 case "artist":
@@ -376,11 +362,12 @@ namespace BetterMusicPlugin
                     break;
 
                 default:
-                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: InfoType=" + infoType + " not valid");
+                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: InfoType=" + infoType + " not valid, assuming title");
+                    InfoType = MeasureInfoType.Title;
                     break;
             }
 
-            string playerType = api.ReadString("PlayerType", "dynamic");
+            string playerType = api.ReadString("PlayerType", "");
             switch (playerType.ToLowerInvariant())
             {
                 case "dynamic":
@@ -400,29 +387,18 @@ namespace BetterMusicPlugin
                     break;
 
                 default:
-                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: PlayerType=" + playerType + " not valid");
+                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: PlayerType=" + playerType + " not valid, assuming dynamic");
+                    PlayerType = MeasurePlayerType.Dynamic;
                     break;
             }
+
+            //If not setup get the rainmeter settings file location and load the authcode
             if(rainmeterFileSettingsLocation.Length == 0)
             {
                 rainmeterFileSettingsLocation = api.GetSettingsFile();
-            }
-
-            if (authcode.Length == 0)
-            {
                 char[] authchar = new char[36];
                 GetPrivateProfileString("BetterMusic", "AuthCode", "", authchar, 37, rainmeterFileSettingsLocation);
                 authcode = new String(authchar);
-                API.Log(API.LogType.Notice, "Read authcode is:" + authcode);
-                if (authcode.Length > 0)
-                {
-                    API.Log(API.LogType.Warning, "Sending authcode onrefresh");
-                    sendGPMDPAuthCode(authcode);
-                }
-                else
-                {
-                    sendGPMDPRemoteRequest();
-                }
             }
         }
         
@@ -547,9 +523,6 @@ namespace BetterMusicPlugin
                 ConnectionString += "\"arguments\": [\"GPMDP API Tester\"]\n";
                 ConnectionString += "}";
 
-                //ConnectionString += "\"arguments\": \"[\"GPMDP API Tester\", \"3867\"]\"\n";
-
-                //Console.WriteLine(ConnectionString);
                 ws.SendAsync(ConnectionString, null);
             }
         }
@@ -566,23 +539,13 @@ namespace BetterMusicPlugin
         }
         private static void sendGPMDPAuthCode(String authcode)
         {
-            API.Log(API.LogType.Notice, "Checking authcode");
             if (ws != null && ws.ReadyState == WebSocketState.Open)
             {
-                String tempcode = "5937d382-1881-4c11-96ef-2d11baf6dfcc";
-                API.Log(API.LogType.Notice, authcode.Length + "Sending auth code:" + authcode);
-                API.Log(API.LogType.Notice, tempcode.Length + "diff" + authcode.CompareTo(tempcode).ToString());
-
-                        String ConnectionString = "{\n";
+                String ConnectionString = "{\n";
                 ConnectionString += "\"namespace\": \"connect\",\n";
                 ConnectionString += "\"method\": \"connect\",\n";
                 ConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + authcode + "\"]\n";
                 ConnectionString += "}";
-
-                //for(int i = 0; i < authchar.Length; i++)
-                //{
-                //    API.Log(API.LogType.Notice, "authchar:" + authchar[i]);
-                //}
 
                 ws.SendAsync(ConnectionString, null);
                 authState = true;
@@ -681,92 +644,91 @@ namespace BetterMusicPlugin
                 int newSongInfoSource = -1;
                 for (int i = 0; i < Enum.GetNames(typeof(MeasurePlayerType)).Length -1; i++)
                 {
-                    //if (i == (int) MeasurePlayerType.AIMP)
-                    //{
-                    //    if (isAIMPRunning())
-                    //    {
-                    //        musicInfo newInfo = getAIMPInfo();
-                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
-                    //        {
-                    //            latestInfo[i] = newInfo;
-                    //            newSongInfoSource = i;
-                    //        }
-                    //    }
-                    //}
-                    //else if (i == (int) MeasurePlayerType.CAD)
-                    //{
-                    //    if (isCADRunning())
-                    //    {
-                    //        musicInfo newInfo = getCADInfo();
-                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
-                    //        {
-                    //            latestInfo[i] = newInfo;
-                    //            newSongInfoSource = i;
-                    //        }
-                    //    }
-                    //}
-                    //else if (i == (int) MeasurePlayerType.iTunes)
-                    //{
-                    //    if (isiTunesRunning())
-                    //    {
-                    //        musicInfo newInfo = getiTunesInfo();
-                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
-                    //        {
-                    //            latestInfo[i] = newInfo;
-                    //            newSongInfoSource = i;
-                    //        }
-                    //    }
-                    //}
-                    //else if (i == (int) MeasurePlayerType.MediaMonkey)
-                    //{
-                    //    if (isMediaMonkeyRunning())
-                    //    {
-                    //        musicInfo newInfo = getMediaMonkeyInfo();
-                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
-                    //        {
-                    //            latestInfo[i] = newInfo;
-                    //            newSongInfoSource = i;
-                    //        }
-                    //    }
-                    //}
-                    //else if (i == (int) MeasurePlayerType.Winamp)
-                    //{
-                    //    if (isWinampRunning())
-                    //    {
-                    //        musicInfo newInfo = getWinampInfo();
-                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
-                    //        {
-                    //            latestInfo[i] = newInfo;
-                    //            newSongInfoSource = i;
-                    //        }
-                    //    }
-                    //}
-                    //else if (i == (int) MeasurePlayerType.WMP)
-                    //{
-                    //    if (isWMPRunning())
-                    //    {
-                    //        musicInfo newInfo = getWMPInfo();
-                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
-                    //        {
-                    //            latestInfo[i] = newInfo;
-                    //            newSongInfoSource = i;
-                    //        }
-                    //    }
-                    //}
-                    //else if (i == (int) MeasurePlayerType.Spotify)
-                    //{
-                    //    if (isSpotifyRunning())
-                    //    {
-                    //        musicInfo newInfo = getSpotifyInfo();
-                    //        if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
-                    //        {
-                    //            latestInfo[i] = newInfo;
-                    //            newSongInfoSource = i;
-                    //        }
-                    //    }
-                    //}
-                    //else 
-                    if (i == (int)MeasurePlayerType.GPMDP)
+                    /*if (i == (int) MeasurePlayerType.AIMP)
+                    {
+                        if (isAIMPRunning())
+                        {
+                            musicInfo newInfo = getAIMPInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                newSongInfoSource = i;
+                            }
+                        }
+                    }
+                    else if (i == (int) MeasurePlayerType.CAD)
+                    {
+                        if (isCADRunning())
+                        {
+                            musicInfo newInfo = getCADInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                newSongInfoSource = i;
+                            }
+                        }
+                    }
+                    else if (i == (int) MeasurePlayerType.iTunes)
+                    {
+                        if (isiTunesRunning())
+                        {
+                            musicInfo newInfo = getiTunesInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                newSongInfoSource = i;
+                            }
+                        }
+                    }
+                    else if (i == (int) MeasurePlayerType.MediaMonkey)
+                    {
+                        if (isMediaMonkeyRunning())
+                        {
+                            musicInfo newInfo = getMediaMonkeyInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                newSongInfoSource = i;
+                            }
+                        }
+                    }
+                    else if (i == (int) MeasurePlayerType.Winamp)
+                    {
+                        if (isWinampRunning())
+                        {
+                            musicInfo newInfo = getWinampInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                newSongInfoSource = i;
+                            }
+                        }
+                    }
+                    else if (i == (int) MeasurePlayerType.WMP)
+                    {
+                        if (isWMPRunning())
+                        {
+                            musicInfo newInfo = getWMPInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                newSongInfoSource = i;
+                            }
+                        }
+                    }
+                    else if (i == (int) MeasurePlayerType.Spotify)
+                    {
+                        if (isSpotifyRunning())
+                        {
+                            musicInfo newInfo = getSpotifyInfo();
+                            if (newInfo.Title != null && (latestInfo[i] == null || !newInfo.Title.Equals(latestInfo[i].Title)))
+                            {
+                                latestInfo[i] = newInfo;
+                                newSongInfoSource = i;
+                            }
+                        }
+                    }
+                    else */if (i == (int)MeasurePlayerType.GPMDP)
                     {
                         if (isGPMDPRunning())
                         {

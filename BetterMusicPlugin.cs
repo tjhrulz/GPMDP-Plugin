@@ -68,6 +68,8 @@ namespace BetterMusicPlugin
 
         //Info and player type of the measure
         private MeasureInfoType InfoType;
+        //TODO Decide if I want to remove this as it is largely not needed as I dont know what the state is when I setup the array 
+        //Likely I will keep it I just need then better handling of only doing the background tasks for that player type and testing of constructers and destructers as player type can change with DynamicVariables=1
         private MeasurePlayerType PlayerType;
 
         //Locations of the most recent updated info
@@ -182,11 +184,15 @@ namespace BetterMusicPlugin
         {
             musicInfo currInfo = new musicInfo { Title = "Test Soundnode Song", Artist = "Test Soundnode Artist" };
 
+            //TODO implement, not 100% sure if/how I will do this as I can never test soundnode with the API always being limited and with sound node not having any sort of API
+
             return currInfo;
         }
         private static musicInfo getChromeMusicInfo()
         {
             musicInfo currInfo = new musicInfo { Title = "Test ChromeMusicInfo Song", Artist = "Test ChromeMusicInfo Artist" };
+
+            //TODO implement message passing from chrome to rainmeter, either using chrome native message passing or if that wont work then by opening a websocket.
 
             return currInfo;
         }
@@ -462,13 +468,14 @@ namespace BetterMusicPlugin
         //To be used for reading and writing values from the rainmeter settings file
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         static extern int GetPrivateProfileString(string section, string key, string defaultValue,
-    [In, Out] char[] value, int size, string filePath);
+            [In, Out] char[] value, int size, string filePath);
 
         [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool WritePrivateProfileString(string section, string key,
             string value, string filePath);
 
+        //Rainmeter functions
         internal Measure()
         {
             musicInfoArray = new musicInfo[Enum.GetNames(typeof(MeasurePlayerType)).Length];
@@ -601,9 +608,6 @@ namespace BetterMusicPlugin
             }
         }
 
-
-        
-
         internal void ExecuteBang(string args)
         {
             string a = args.ToLowerInvariant();
@@ -641,9 +645,16 @@ namespace BetterMusicPlugin
             //TODO Make detection of reconnection more performant
             isGPMDPWebsocketConnected();
 
-            for (int i = 0; i < Enum.GetNames(typeof(MeasurePlayerType)).Length - 1; i++)
+            if (PlayerType == MeasurePlayerType.Dynamic)
             {
-                if (musicInfoArray[i] != null && musicInfoArray[i].LastUpdated > mostRecentUpdateTime) { mostRecentUpdateLoc = i; }
+                for (int i = 0; i < Enum.GetNames(typeof(MeasurePlayerType)).Length - 1; i++)
+                {
+                    if (musicInfoArray[i] != null && musicInfoArray[i].LastUpdated > mostRecentUpdateTime) { mostRecentUpdateLoc = i; }
+                }
+            }
+            else
+            {
+                mostRecentUpdateLoc = (int)PlayerType;
             }
 
             switch (InfoType)

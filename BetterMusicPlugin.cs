@@ -81,7 +81,9 @@ namespace BetterMusicPlugin
         private static string coverOutputLocation;
         private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
         private static bool websocketState = false;
-        private static string authcode = "58e55e70-74bb-4d00-8b77-d624581d6ab6";
+        private static bool authState = false;
+        private static string authcode = "";
+        //58e55e70-74bb-4d00-8b77-d624581d6ab6
 
         enum GPMInfoSupported
         {
@@ -94,7 +96,7 @@ namespace BetterMusicPlugin
 
         public static void GPMDPWebsocketCreator()
         {
-            if (ws == null || ws.IsAlive)
+            if (ws == null || !ws.IsAlive)
             {
                 //List<Object> requestAccess = new List<Object>();
                 //Object accessObject = new { Namespace = "connect", Method = "connect", Arguments = "GPMDP plugin for Rainmeter"};
@@ -197,6 +199,10 @@ namespace BetterMusicPlugin
                                 {
                                     API.Log(API.LogType.Warning, "Connection code bad, please recreate code");
                                 }
+                                else
+                                {
+                                    sendGPMDPAuthCode(connectionInfo);
+                                }
                             }
                         }
                     }
@@ -206,9 +212,16 @@ namespace BetterMusicPlugin
                 ws.OnClose += (sender, d) => websocketState = false;
                 ws.OnOpen += (sender, d) =>
                 {
-                    API.Log(API.LogType.Notice, "Sending remote code " + authcode);
-                    sendGPMDPAuthCode();
                     websocketState = true;
+                    if (authcode.Length > 0)
+                    {
+                        API.Log(API.LogType.Notice, "Sending remote code " + authcode);
+                        sendGPMDPAuthCode(authcode);
+                    }
+                    else
+                    {
+                        sendGPMDPRemoteRequest();
+                    }
                 };
                 ws.ConnectAsync();
                 //Console.ReadKey(true);
@@ -497,7 +510,35 @@ namespace BetterMusicPlugin
 
             return currInfo;
         }
-        private static int sendGPMDPAuthCode()
+        private static void sendGPMDPRemoteRequest()
+        {
+            if (ws != null && ws.ReadyState == WebSocketState.Open && authState == false)
+            {
+                String ConnectionString = "{\n";
+                ConnectionString += "\"namespace\": \"connect\",\n";
+                ConnectionString += "\"method\": \"connect\",\n";
+                ConnectionString += "\"arguments\": [\"GPMDP API Tester\"]\n";
+                ConnectionString += "}";
+
+                //ConnectionString += "\"arguments\": \"[\"GPMDP API Tester\", \"3867\"]\"\n";
+
+                //Console.WriteLine(ConnectionString);
+                ws.SendAsync(ConnectionString, null);
+                authState = true;
+            }
+        }
+
+        private static void getGPMDPAuthCode(String keycode)
+        {
+            String keycodeConnectionString = "{\n";
+            keycodeConnectionString += "\"namespace\": \"connect\",\n";
+            keycodeConnectionString += "\"method\": \"connect\",\n";
+            keycodeConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + keycode + "\"]\n";
+            keycodeConnectionString += "}";
+
+            ws.SendAsync(keycodeConnectionString, null);
+        }
+        private static int sendGPMDPAuthCode(String authcode)
         {
             String ConnectionString = "{\n";
             ConnectionString += "\"namespace\": \"connect\",\n";
@@ -505,7 +546,7 @@ namespace BetterMusicPlugin
             ConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + authcode + "\"]\n";
             ConnectionString += "}";
 
-            ws.SendAsync(ConnectionString, null);
+            ws.SendAsync(ConnectionString, connection => Console.WriteLine("Authorized!"));
 
             return 0;
         }
@@ -582,6 +623,11 @@ namespace BetterMusicPlugin
             }
             else if (a.Equals("pause"))
             {
+            }
+            else if (a.Contains("key"))
+            {
+                //Get the last 4 chars of the keycode, this should ensure that we always get it even when bang is a little off
+                getGPMDPAuthCode(args.Substring(args.Length - 4, 4));
             }
             else
             {

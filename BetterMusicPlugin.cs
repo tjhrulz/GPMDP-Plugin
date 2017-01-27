@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-//using System.Net.WebSockets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using WebSocketSharp;
 using Rainmeter;
-using System.Text;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -83,6 +80,7 @@ namespace BetterMusicPlugin
         private static bool websocketState = false;
         private static bool authState = false;
         private static string authcode = "";
+        private static string rainmeterFileSettingsLocation = "";
         //58e55e70-74bb-4d00-8b77-d624581d6ab6
 
         enum GPMInfoSupported
@@ -201,7 +199,10 @@ namespace BetterMusicPlugin
                                 }
                                 else
                                 {
+                                    API.Log(API.LogType.Warning, "New auth code:" + connectionInfo);
                                     sendGPMDPAuthCode(connectionInfo);
+                                    WritePrivateProfileString("BetterMusic", "AuthCode", connectionInfo, rainmeterFileSettingsLocation);
+                                    authcode = connectionInfo;
                                 }
                             }
                         }
@@ -215,12 +216,7 @@ namespace BetterMusicPlugin
                     websocketState = true;
                     if (authcode.Length > 0)
                     {
-                        API.Log(API.LogType.Notice, "Sending remote code " + authcode);
                         sendGPMDPAuthCode(authcode);
-                    }
-                    else
-                    {
-                        sendGPMDPRemoteRequest();
                     }
                 };
                 ws.ConnectAsync();
@@ -292,7 +288,7 @@ namespace BetterMusicPlugin
             //JSONWriter.WriteValue("GPMDP API Tester");
             //
             //openConnectionString = JSONWriter.ToString();
-
+            
             if (GPMInitThread.ThreadState == ThreadState.Unstarted)
             {
                 GPMInitThread.Start();
@@ -406,7 +402,36 @@ namespace BetterMusicPlugin
                     API.Log(API.LogType.Error, "BetterMusicPlugin.dll: PlayerType=" + playerType + " not valid");
                     break;
             }
+            if(rainmeterFileSettingsLocation.Length == 0)
+            {
+                rainmeterFileSettingsLocation = api.GetSettingsFile();
+            }
+
+            if (authcode.Length == 0)
+            {
+                char[] authCodeCharArr = new char[64];
+                GetPrivateProfileString("BetterMusic", "AuthCode", "", authCodeCharArr, 64, rainmeterFileSettingsLocation);
+                authcode = new String(authCodeCharArr);
+                API.Log(API.LogType.Notice, "Read authcode is:" + authcode);
+                if (authcode.Length > 0)
+                {
+                    sendGPMDPAuthCode(authcode);
+                }
+                else
+                {
+                    sendGPMDPRemoteRequest();
+                }
+            }
         }
+        
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        static extern int GetPrivateProfileString(string section, string key, string defaultValue,
+            [In, Out] char[] value, int size, string filePath);
+
+        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool WritePrivateProfileString(string section, string key,
+            string value, string filePath);
 
         ////Functions specific to AIMP player
         //private static Boolean isAIMPRunning()
@@ -524,7 +549,6 @@ namespace BetterMusicPlugin
 
                 //Console.WriteLine(ConnectionString);
                 ws.SendAsync(ConnectionString, null);
-                authState = true;
             }
         }
 
@@ -538,17 +562,22 @@ namespace BetterMusicPlugin
 
             ws.SendAsync(keycodeConnectionString, null);
         }
-        private static int sendGPMDPAuthCode(String authcode)
+        private static void sendGPMDPAuthCode(String authcode)
         {
-            String ConnectionString = "{\n";
-            ConnectionString += "\"namespace\": \"connect\",\n";
-            ConnectionString += "\"method\": \"connect\",\n";
-            ConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + authcode + "\"]\n";
-            ConnectionString += "}";
+            API.Log(API.LogType.Notice, "Checking authcode");
+            if (ws != null && ws.ReadyState == WebSocketState.Open)
+            {
+                API.Log(API.LogType.Notice, "Sending auth code:" + authcode);
 
-            ws.SendAsync(ConnectionString, connection => Console.WriteLine("Authorized!"));
+                String ConnectionString = "{\n";
+                ConnectionString += "\"namespace\": \"connect\",\n";
+                ConnectionString += "\"method\": \"connect\",\n";
+                ConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + authcode + "\"]\n";
+                ConnectionString += "}";
 
-            return 0;
+                ws.SendAsync(ConnectionString, connection => Console.WriteLine("Authorized!"));
+                authState = true;
+            }
         }
 
         private static void GPMDPPlayPause()
@@ -958,7 +987,6 @@ namespace BetterMusicPlugin
         public static void Initialize(ref IntPtr data, IntPtr rm)
         {
             data = GCHandle.ToIntPtr(GCHandle.Alloc(new Measure()));
-
         }
 
         [DllExport]

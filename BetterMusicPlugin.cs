@@ -15,6 +15,7 @@ namespace BetterMusicPlugin
         //These Classes and enums are for use with every media player type, if you want to implement new info or a new player source then add it here
         class musicInfo
         {
+            public musicInfo() { ConnectionStatus = 0; }
             public string Artist { get; set; }
             public string Album { get; set; }
             public string Title { get; set; }
@@ -32,6 +33,7 @@ namespace BetterMusicPlugin
             public string Shuffle { get; set; }
             public int State { get; set; }
             public string Status { get; set; }
+            public int ConnectionStatus { get; set; }
             public string Volume { get; set; }
             public DateTime LastUpdated { get; set; }
         }
@@ -53,6 +55,7 @@ namespace BetterMusicPlugin
             Shuffle,
             State,
             Status,
+            ConnectionStatus,
             Volume
         }
         enum MeasurePlayerType
@@ -204,10 +207,10 @@ namespace BetterMusicPlugin
         private static string defaultCoverLocation;
         private static string coverOutputLocation;
         private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
-        private static bool websocketState = false;
-        private static bool authState = false;
-        private static string authcode = "";
+        //private static int websocketState = 0;
+        private static string authcode = "\0";
         private static string rainmeterFileSettingsLocation = "";
+        private static bool sentInitialAuthcode = false;
 
         //The channel names that are handled in the OnMessage for the GPMDP websocket
         enum GPMInfoSupported
@@ -220,14 +223,25 @@ namespace BetterMusicPlugin
         }
 
         //Check if the GPMDP websocket is connected and if it is not connect
-        private static Boolean isGPMDPWebsocketConnected()
+        private static void isGPMDPWebsocketConnected()
         {
-            if (websocketState == false && ws != null)
+            if (ws != null)
             {
-                ws.ConnectAsync();
-            }
+                if (websocketInfoGPMDP.ConnectionStatus == 0) { ws.ConnectAsync(); }
+                else if (sentInitialAuthcode == false)
+                {
+                    sentInitialAuthcode = true;
 
-            return websocketState;
+                    if (authcode.Length > 30 && !authcode.Contains("\0"))
+                    {
+                        sendGPMDPAuthCode(authcode);
+                    }
+                    else
+                    {
+                        sendGPMDPRemoteRequest();
+                    }
+                }
+            }
         }
         //Setup the websocket for GPMDP
         public static void GPMDPWebsocketCreator()
@@ -324,6 +338,7 @@ namespace BetterMusicPlugin
                                 if (connectionInfo.ToUpper().CompareTo("CODE_REQUIRED") == 0)
                                 {
                                     API.Log(API.LogType.Warning, "Connection code bad, please send pin code using a bang as folows ''keycode ####''");
+                                    websocketInfoGPMDP.ConnectionStatus = 1;
                                 }
                                 else
                                 {
@@ -339,12 +354,13 @@ namespace BetterMusicPlugin
                 };
 
 
-                ws.OnClose += (sender, d) => websocketState = false;
+                ws.OnClose += (sender, d) => websocketInfoGPMDP.ConnectionStatus = 0;
                 ws.OnOpen += (sender, d) =>
                 {
-                    websocketState = true;
-                    if (authcode.Length > 0)
+                    websocketInfoGPMDP.ConnectionStatus = 1;
+                    if (authcode.Length > 30 && !authcode.Contains("\0"))
                     {
+                        sentInitialAuthcode = true;
                         sendGPMDPAuthCode(authcode);
                     }
                 };
@@ -356,7 +372,7 @@ namespace BetterMusicPlugin
         //Call sendGPMDPRemoteRequest to have GPMDP generate a 4 digit keycode, then getGPMDPAuthCode once you have recieved the code, and send authcode once GPMDP's websocket has sent you the perminate code
         private static void sendGPMDPRemoteRequest()
         {
-            if (ws != null && ws.ReadyState == WebSocketState.Open && authState == false)
+            if (ws != null && ws.ReadyState == WebSocketState.Open)
             {
                 String ConnectionString = "{\n";
                 ConnectionString += "\"namespace\": \"connect\",\n";
@@ -388,7 +404,7 @@ namespace BetterMusicPlugin
                 ConnectionString += "}";
 
                 ws.SendAsync(ConnectionString, null);
-                authState = true;
+                websocketInfoGPMDP.ConnectionStatus = 2;
             }
         }
 
@@ -563,6 +579,10 @@ namespace BetterMusicPlugin
                     InfoType = MeasureInfoType.Status;
                     break;
 
+                case "connectionstatus":
+                    InfoType = MeasureInfoType.ConnectionStatus;
+                    break;
+
                 case "volume":
                     InfoType = MeasureInfoType.Volume;
                     break;
@@ -663,6 +683,12 @@ namespace BetterMusicPlugin
                     if (mostRecentUpdateLoc >= 0)
                     {
                         return musicInfoArray[mostRecentUpdateLoc].State;
+                    }
+                    return 0;
+                case MeasureInfoType.ConnectionStatus:
+                    if (mostRecentUpdateLoc >= 0)
+                    {
+                        return musicInfoArray[mostRecentUpdateLoc].ConnectionStatus;
                     }
                     return 0;
             }

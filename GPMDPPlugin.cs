@@ -8,7 +8,7 @@ using System.IO;
 using System.Net;
 using System.Threading;
 
-namespace BetterMusicPlugin
+namespace GPMDPPlugin
 {
     internal class Measure
     {
@@ -344,7 +344,7 @@ namespace BetterMusicPlugin
                                 {
                                     API.Log(API.LogType.Warning, "New authorization code generated and saved:" + connectionInfo);
                                     sendGPMDPAuthCode(connectionInfo);
-                                    WritePrivateProfileString("BetterMusic", "AuthCode", connectionInfo, rainmeterFileSettingsLocation);
+                                    WritePrivateProfileString("GPMDPPlugin", "AuthCode", connectionInfo, rainmeterFileSettingsLocation);
                                     authcode = connectionInfo;
                                 }
                             }
@@ -588,7 +588,7 @@ namespace BetterMusicPlugin
                     break;
 
                 default:
-                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: InfoType=" + infoType + " not valid, assuming title");
+                    API.Log(API.LogType.Error, "GPMDPPlugin.dll: InfoType=" + infoType + " not valid, assuming title");
                     InfoType = MeasureInfoType.Title;
                     break;
             }
@@ -613,7 +613,7 @@ namespace BetterMusicPlugin
                     break;
 
                 default:
-                    API.Log(API.LogType.Error, "BetterMusicPlugin.dll: PlayerType=" + playerType + " not valid, assuming dynamic");
+                    API.Log(API.LogType.Error, "GPMDPPlugin.dll: PlayerType=" + playerType + " not valid, assuming dynamic");
                     PlayerType = MeasurePlayerType.Dynamic;
                     break;
             }
@@ -623,7 +623,7 @@ namespace BetterMusicPlugin
             {
                 rainmeterFileSettingsLocation = api.GetSettingsFile();
                 char[] authchar = new char[36];
-                GetPrivateProfileString("BetterMusic", "AuthCode", "", authchar, 37, rainmeterFileSettingsLocation);
+                GetPrivateProfileString("GPMDPPlugin", "AuthCode", "", authchar, 37, rainmeterFileSettingsLocation);
                 authcode = new String(authchar);
             }
         }
@@ -656,7 +656,7 @@ namespace BetterMusicPlugin
             }
             else
             {
-                API.Log(API.LogType.Error, "BetterMusic.dll: Invalid bang " + args);
+                API.Log(API.LogType.Error, "GPMDPPlugin.dll: Invalid bang " + args);
             }
         }
 

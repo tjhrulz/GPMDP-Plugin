@@ -572,6 +572,10 @@ namespace GPMDPPlugin
 
                 case MeasureInfoType.Volume:
                     return websocketInfoGPMDP.Volume;
+                case MeasureInfoType.State:
+                    return null;
+                case MeasureInfoType.ConnectionStatus:
+                    return null;
             }
             return "";
         }

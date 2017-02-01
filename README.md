@@ -1,12 +1,5 @@
-#A WIP plguin for Rainmeter that is an enhanced version of the nowPlaying plugin that comes with rainmeter
-This is being built for my Monstercat Suite documentation for other skins and examples will come once functionality is finished  
-Current state - unfinished pseudocode
-
-#Planned Features
-Duplication of the NowPlaying plugin  
-Support for GPMDP  
-Support for Spotify? (If I can get the code or integrate from the original)  
-Support for Soundnode  
-Creation of a chrome plugin to expose song info from various places (youtube, google play, spotify web, soundcloud, and potentially even streaming services like twitch (I will support anything I can that has at least and artist and currently playing name))  
-Support for the above mentioned chrome extension
-A dynamic selector for the above so one does not need to be predefined and the source can be whatever has the latest info  
+#Google Play Music Desktop Player for Rainmeter
+A plugin that makes available the music info [Google Play Music Desktop Player](https://www.googleplaymusicdesktopplayer.com/) to rainmeter skins.  
+Has full media control support (Play/Pause, Next, Previous, Shuffle, Repeat) 
+Current state: Standard media feature set. Support for rating, next queued songs info, and lyrics planned for future versions.  
+Note: Please see included installer on how to grant the plugin access to media controls. If no info is shown please see helper for how to setup GPMDP

@@ -145,9 +145,19 @@ namespace GPMDPPlugin
                 ws.OnMessage += (sender, d) =>
                 {
                     String type = d.Data.Substring(12, d.Data.IndexOf(",") - 13);
-                    GPMInfoSupported typeEnum;
+                    bool acceptedType = false;
 
-                    if (Enum.TryParse(type.ToLower(), out typeEnum))
+                    API.Log(API.LogType.Notice, "Type is:" + type);
+                    foreach (GPMInfoSupported currType in Enum.GetValues(typeof(GPMInfoSupported)))
+                    {
+                        if(currType.ToString().CompareTo(type.ToLower()) == 0)
+                        {
+                            acceptedType = true;
+                            API.Log(API.LogType.Notice, "Type accepted:" + type);
+                        }
+                    }
+
+                    if (acceptedType)
                     {
                         JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
                         JArray arrayData = new JArray(data);

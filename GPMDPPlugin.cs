@@ -146,14 +146,12 @@ namespace GPMDPPlugin
                 {
                     String type = d.Data.Substring(12, d.Data.IndexOf(",") - 13);
                     bool acceptedType = false;
-
-                    API.Log(API.LogType.Notice, "Type is:" + type);
+                    
                     foreach (GPMInfoSupported currType in Enum.GetValues(typeof(GPMInfoSupported)))
                     {
                         if(currType.ToString().CompareTo(type.ToLower()) == 0)
                         {
                             acceptedType = true;
-                            API.Log(API.LogType.Notice, "Type accepted:" + type);
                         }
                     }
 

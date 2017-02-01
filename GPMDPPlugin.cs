@@ -15,7 +15,27 @@ namespace GPMDPPlugin
         //These Classes and enums are for use with every media player type, if you want to implement new info or a new player source then add it here
         class musicInfo
         {
-            public musicInfo() { ConnectionStatus = 0; }
+            public musicInfo()
+            {
+                State = 0;
+                Repeat = 0;
+                Shuffle = 0;
+                Volume = 0;
+
+                Artist = "";
+                Album = "";
+                Title = "";
+                Number = "";
+                Year = "";
+                Genre = "";
+                Cover = "";
+                CoverWebAddress = "";
+                File = "";
+                Duration = "";
+                Position = "";
+                Progress = "";
+                Rating = "";
+            }
             public string Artist { get; set; }
             public string Album { get; set; }
             public string Title { get; set; }
@@ -29,13 +49,11 @@ namespace GPMDPPlugin
             public string Position { get; set; }
             public string Progress { get; set; }
             public string Rating { get; set; }
-            public string Repeat { get; set; }
-            public string Shuffle { get; set; }
+            public int Repeat { get; set; }
+            public int Shuffle { get; set; }
             public int State { get; set; }
-            public string Status { get; set; }
-            public int ConnectionStatus { get; set; }
-            public string Volume { get; set; }
-            public DateTime LastUpdated { get; set; }
+            public int Status { get; set; }
+            public int Volume { get; set; }
         }
         enum MeasureInfoType
         {
@@ -55,7 +73,6 @@ namespace GPMDPPlugin
             Shuffle,
             State,
             Status,
-            ConnectionStatus,
             Volume
         }
 
@@ -63,9 +80,7 @@ namespace GPMDPPlugin
         private MeasureInfoType InfoType;
 
         //Locations of the most recent updated info
-        //TODO DateTime does not track ms, this means that two things could update in the same second and now have a max. 
-        private static int mostRecentUpdateLoc = -1;
-        private static DateTime mostRecentUpdateTime = DateTime.MinValue;
+        //TODO DateTime does not track ms, this means that two things could update in the same second and now have a max.
 
 
         //Functions specific to GPMDP player
@@ -93,7 +108,9 @@ namespace GPMDPPlugin
             track,
             time,
             playstate,
-            connect
+            connect,
+            repeat,
+            shuffle
         }
 
         //Check if the GPMDP websocket is connected and if it is not connect
@@ -101,7 +118,7 @@ namespace GPMDPPlugin
         {
             if (ws != null)
             {
-                if (websocketInfoGPMDP.ConnectionStatus == 0) { ws.ConnectAsync(); }
+                if (websocketInfoGPMDP.Status == 0) { ws.ConnectAsync(); }
                 else if (sentInitialAuthcode == false)
                 {
                     sentInitialAuthcode = true;
@@ -212,7 +229,7 @@ namespace GPMDPPlugin
                                 if (connectionInfo.ToUpper().CompareTo("CODE_REQUIRED") == 0)
                                 {
                                     API.Log(API.LogType.Warning, "Connection code bad, please send pin code using a bang as folows ''keycode ####''");
-                                    websocketInfoGPMDP.ConnectionStatus = 1;
+                                    websocketInfoGPMDP.Status = 1;
                                 }
                                 else
                                 {
@@ -222,16 +239,43 @@ namespace GPMDPPlugin
                                     authcode = connectionInfo;
                                 }
                             }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.repeat.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                String repeatState = currentValue.ToString();
+                                if (repeatState.ToUpper().CompareTo("NO_REPEAT") == 0)
+                                {
+                                    websocketInfoGPMDP.Repeat = 0;
+                                }
+                                else if (repeatState.ToUpper().CompareTo("SINGLE_REPEAT") == 0)
+                                {
+                                    websocketInfoGPMDP.Repeat = 1;
+                                }
+                                else if (repeatState.ToUpper().CompareTo("LIST_REPEAT") == 0)
+                                {
+                                    websocketInfoGPMDP.Repeat = 2;
+                                }
+                            }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.shuffle.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                String shuffleState = currentValue.ToString();
+                                if (shuffleState.ToUpper().CompareTo("NO_SHUFFLE") == 0)
+                                {
+                                    websocketInfoGPMDP.Shuffle = 0;
+                                }
+                                else if (shuffleState.ToUpper().CompareTo("ALL_SHUFFLE") == 0)
+                                {
+                                    websocketInfoGPMDP.Shuffle = 1;
+                                }
+                            }
                         }
                     }
-                    websocketInfoGPMDP.LastUpdated = DateTime.UtcNow;
                 };
 
 
-                ws.OnClose += (sender, d) => websocketInfoGPMDP.ConnectionStatus = 0;
+                ws.OnClose += (sender, d) => websocketInfoGPMDP.Status = 0;
                 ws.OnOpen += (sender, d) =>
                 {
-                    websocketInfoGPMDP.ConnectionStatus = 1;
+                    websocketInfoGPMDP.Status = 1;
                     if (authcode.Length > 30 && !authcode.Contains("\0"))
                     {
                         sentInitialAuthcode = true;
@@ -251,7 +295,7 @@ namespace GPMDPPlugin
                 String ConnectionString = "{\n";
                 ConnectionString += "\"namespace\": \"connect\",\n";
                 ConnectionString += "\"method\": \"connect\",\n";
-                ConnectionString += "\"arguments\": [\"GPMDP API Tester\"]\n";
+                ConnectionString += "\"arguments\": [\"Rainmeter GPMDP Plugin\"]\n";
                 ConnectionString += "}";
 
                 ws.SendAsync(ConnectionString, null);
@@ -262,7 +306,7 @@ namespace GPMDPPlugin
             String keycodeConnectionString = "{\n";
             keycodeConnectionString += "\"namespace\": \"connect\",\n";
             keycodeConnectionString += "\"method\": \"connect\",\n";
-            keycodeConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + keycode + "\"]\n";
+            keycodeConnectionString += "\"arguments\": [\"Rainmeter GPMDP Plugin\", \"" + keycode + "\"]\n";
             keycodeConnectionString += "}";
 
             ws.SendAsync(keycodeConnectionString, null);
@@ -274,11 +318,11 @@ namespace GPMDPPlugin
                 String ConnectionString = "{\n";
                 ConnectionString += "\"namespace\": \"connect\",\n";
                 ConnectionString += "\"method\": \"connect\",\n";
-                ConnectionString += "\"arguments\": [\"GPMDP API Tester\", \"" + authcode + "\"]\n";
+                ConnectionString += "\"arguments\": [\"Rainmeter GPMDP Plugin\", \"" + authcode + "\"]\n";
                 ConnectionString += "}";
 
                 ws.SendAsync(ConnectionString, null);
-                websocketInfoGPMDP.ConnectionStatus = 2;
+                websocketInfoGPMDP.Status = 2;
             }
         }
 
@@ -307,6 +351,22 @@ namespace GPMDPPlugin
             previousString += "\"method\": \"rewind\"\n";
             previousString += "}";
             ws.SendAsync(previousString, null);
+        }
+        private static void GPMDPToggleShuffle()
+        {
+            String shuffleString = "{\n";
+            shuffleString += "\"namespace\": \"playback\",\n";
+            shuffleString += "\"method\": \"toggleShuffle\"\n";
+            shuffleString += "}";
+            ws.SendAsync(shuffleString, null);
+        }
+        private static void GPMDPPToggleRepeat()
+        {
+            String repeatString = "{\n";
+            repeatString += "\"namespace\": \"playback\",\n";
+            repeatString += "\"method\": \"toggleRepeat\"\n";
+            repeatString += "}";
+            ws.SendAsync(repeatString, null);
         }
 
         //For downloading the image from the internet
@@ -450,7 +510,7 @@ namespace GPMDPPlugin
                     break;
 
                 case "connectionstatus":
-                    InfoType = MeasureInfoType.ConnectionStatus;
+                    InfoType = MeasureInfoType.Status;
                     break;
 
                 case "volume":
@@ -488,6 +548,14 @@ namespace GPMDPPlugin
             {
                 GPMDPPrevious();
             }
+            else if (a.Equals("repeat"))
+            {
+                GPMDPPToggleRepeat();
+            }
+            else if (a.Equals("shuffle"))
+            {
+                GPMDPToggleShuffle();
+            }
             else if (a.Equals("play"))
             {
             }
@@ -514,8 +582,14 @@ namespace GPMDPPlugin
             {
                 case MeasureInfoType.State:
                     return websocketInfoGPMDP.State;
-                case MeasureInfoType.ConnectionStatus:
-                    return websocketInfoGPMDP.ConnectionStatus;
+                case MeasureInfoType.Status:
+                    return websocketInfoGPMDP.Status;
+                case MeasureInfoType.Repeat:
+                    return websocketInfoGPMDP.Repeat;
+                case MeasureInfoType.Shuffle:
+                    return websocketInfoGPMDP.Shuffle;
+                case MeasureInfoType.Volume:
+                    return websocketInfoGPMDP.Volume;
             }
 
             return 0.0;
@@ -561,20 +635,16 @@ namespace GPMDPPlugin
                 case MeasureInfoType.Rating:
                     return websocketInfoGPMDP.Rating;
 
+                //These values are integers returned in update
                 case MeasureInfoType.Repeat:
-                    return websocketInfoGPMDP.Repeat;
-
-                case MeasureInfoType.Shuffle:
-                    return websocketInfoGPMDP.Shuffle;
-
-                case MeasureInfoType.Status:
-                    return websocketInfoGPMDP.Status;
-
-                case MeasureInfoType.Volume:
-                    return websocketInfoGPMDP.Volume;
-                case MeasureInfoType.State:
                     return null;
-                case MeasureInfoType.ConnectionStatus:
+                case MeasureInfoType.Shuffle:
+                    return null;
+                case MeasureInfoType.Status:
+                    return null;
+                case MeasureInfoType.Volume:
+                    return null;
+                case MeasureInfoType.State:
                     return null;
             }
             return "";
@@ -595,7 +665,10 @@ namespace GPMDPPlugin
         [DllExport]
         public static void Finalize(IntPtr data)
         {
-            Measure.ws.CloseAsync();
+            if (Measure.ws != null && Measure.ws.IsAlive)
+            {
+                Measure.ws.CloseAsync();
+            }
             GCHandle.FromIntPtr(data).Free();
 
             if (StringBuffer != IntPtr.Zero)

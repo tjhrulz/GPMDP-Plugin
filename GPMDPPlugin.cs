@@ -21,6 +21,7 @@ namespace GPMDPPlugin
                 Repeat = 0;
                 Shuffle = 0;
                 Volume = 0;
+                Status = -1;
 
                 Artist = "";
                 Album = "";
@@ -118,7 +119,7 @@ namespace GPMDPPlugin
         {
             if (ws != null)
             {
-                if (websocketInfoGPMDP.Status == 0) { ws.ConnectAsync(); }
+                if (websocketInfoGPMDP.Status == -1 || websocketInfoGPMDP.Status == 0) { ws.ConnectAsync(); }
                 else if (sentInitialAuthcode == false)
                 {
                     sentInitialAuthcode = true;
@@ -673,10 +674,6 @@ namespace GPMDPPlugin
         [DllExport]
         public static void Finalize(IntPtr data)
         {
-            if (Measure.ws != null && Measure.ws.IsAlive)
-            {
-                Measure.ws.CloseAsync();
-            }
             GCHandle.FromIntPtr(data).Free();
 
             if (StringBuffer != IntPtr.Zero)

@@ -513,6 +513,7 @@ namespace GPMDPPlugin
 
                 case "progress":
                     InfoType = MeasureInfoType.Progress;
+                    maxValue = 100.0;
                     break;
 
                 case "rating":

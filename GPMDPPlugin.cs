@@ -22,6 +22,7 @@ namespace GPMDPPlugin
                 Shuffle = 0;
                 Volume = 0;
                 Status = -1;
+                DurationInms = 0;
 
                 Artist = "";
                 Album = "";
@@ -49,6 +50,7 @@ namespace GPMDPPlugin
             public string Duration { get; set; }
             public string Position { get; set; }
             public string Progress { get; set; }
+            public int DurationInms { get; set; }
             public string Rating { get; set; }
             public int Repeat { get; set; }
             public int Shuffle { get; set; }
@@ -195,6 +197,7 @@ namespace GPMDPPlugin
                                     }
                                     else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
                                     {
+                                        websocketInfoGPMDP.DurationInms = Convert.ToInt32(trackInfo.First);
                                         int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
                                         int trackMinutes = trackSeconds / 60;
                                         trackSeconds = trackSeconds % 60;
@@ -374,6 +377,15 @@ namespace GPMDPPlugin
             String repeatString = "{\n";
             repeatString += "\"namespace\": \"playback\",\n";
             repeatString += "\"method\": \"toggleRepeat\"\n";
+            repeatString += "}";
+            ws.SendAsync(repeatString, null);
+        }
+        private static void GPMDPPSetPosition(int timeInms)
+        {
+            String repeatString = "{\n";
+            repeatString += "\"namespace\": \"playback\",\n";
+            repeatString += "\"method\": \"setCurrentTime\",\n";
+            repeatString += "\"arguments\": [" + timeInms + "]\n";
             repeatString += "}";
             ws.SendAsync(repeatString, null);
         }
@@ -570,6 +582,11 @@ namespace GPMDPPlugin
             }
             else if (a.Equals("pause"))
             {
+            }
+            else if (a.Contains("setposition"))
+            {
+                int percent = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
+                GPMDPPSetPosition(websocketInfoGPMDP.DurationInms * percent / 100);
             }
             else if (a.Contains("key"))
             {

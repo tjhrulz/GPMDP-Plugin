@@ -23,6 +23,8 @@ namespace GPMDPPlugin
                 Volume = 0;
                 Status = -1;
                 DurationInms = 0;
+                PositionInms = 0;
+                Progress= 0;
 
                 Artist = "";
                 Album = "";
@@ -35,7 +37,6 @@ namespace GPMDPPlugin
                 File = "";
                 Duration = "";
                 Position = "";
-                Progress = "";
                 Rating = "";
             }
             public string Artist { get; set; }
@@ -49,8 +50,9 @@ namespace GPMDPPlugin
             public string File { get; set; }
             public string Duration { get; set; }
             public string Position { get; set; }
-            public string Progress { get; set; }
+            public int Progress { get; set; }
             public int DurationInms { get; set; }
+            public int PositionInms { get; set; }
             public string Rating { get; set; }
             public int Repeat { get; set; }
             public int Shuffle { get; set; }
@@ -189,6 +191,8 @@ namespace GPMDPPlugin
                                 {
                                     if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
                                     {
+                                        websocketInfoGPMDP.PositionInms = Convert.ToInt32(trackInfo.First);
+                                        websocketInfoGPMDP.Progress = (int)((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
                                         int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
                                         int trackMinutes = trackSeconds / 60;
                                         trackSeconds = trackSeconds % 60;
@@ -198,6 +202,7 @@ namespace GPMDPPlugin
                                     else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
                                     {
                                         websocketInfoGPMDP.DurationInms = Convert.ToInt32(trackInfo.First);
+                                        websocketInfoGPMDP.Progress = (int)((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
                                         int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
                                         int trackMinutes = trackSeconds / 60;
                                         trackSeconds = trackSeconds % 60;
@@ -608,14 +613,21 @@ namespace GPMDPPlugin
             {
                 case MeasureInfoType.State:
                     return websocketInfoGPMDP.State;
+
                 case MeasureInfoType.Status:
                     return websocketInfoGPMDP.Status;
+
                 case MeasureInfoType.Repeat:
                     return websocketInfoGPMDP.Repeat;
+
                 case MeasureInfoType.Shuffle:
                     return websocketInfoGPMDP.Shuffle;
+
                 case MeasureInfoType.Volume:
                     return websocketInfoGPMDP.Volume;
+
+                case MeasureInfoType.Progress:
+                    return websocketInfoGPMDP.Progress;
             }
 
             return 0.0;
@@ -655,9 +667,6 @@ namespace GPMDPPlugin
                 case MeasureInfoType.Position:
                     return websocketInfoGPMDP.Position;
 
-                case MeasureInfoType.Progress:
-                    return websocketInfoGPMDP.Progress;
-
                 case MeasureInfoType.Rating:
                     return websocketInfoGPMDP.Rating;
 
@@ -669,6 +678,8 @@ namespace GPMDPPlugin
                 case MeasureInfoType.Status:
                     return null;
                 case MeasureInfoType.Volume:
+                    return null;
+                case MeasureInfoType.Progress:
                     return null;
                 case MeasureInfoType.State:
                     return null;

@@ -24,7 +24,8 @@ namespace GPMDPPlugin
                 Status = -1;
                 DurationInms = 0;
                 PositionInms = 0;
-                Progress= 0;
+                Progress = 0;
+                Rating = 0;
 
                 Artist = "";
                 Album = "";
@@ -34,10 +35,10 @@ namespace GPMDPPlugin
                 Genre = "";
                 Cover = "";
                 CoverWebAddress = "";
-                File = "";
+                //File = "";
                 Duration = "";
                 Position = "";
-                Rating = "";
+                Lyrics = "";
             }
             public string Artist { get; set; }
             public string Album { get; set; }
@@ -47,18 +48,19 @@ namespace GPMDPPlugin
             public string Genre { get; set; }
             public string Cover { get; set; }
             public string CoverWebAddress { get; set; }
-            public string File { get; set; }
+            //public string File { get; set; }
             public string Duration { get; set; }
             public string Position { get; set; }
             public int Progress { get; set; }
             public int DurationInms { get; set; }
             public int PositionInms { get; set; }
-            public string Rating { get; set; }
+            public int Rating { get; set; }
             public int Repeat { get; set; }
             public int Shuffle { get; set; }
             public int State { get; set; }
             public int Status { get; set; }
             public int Volume { get; set; }
+            public string Lyrics { get; set; }
         }
         enum MeasureInfoType
         {
@@ -78,7 +80,8 @@ namespace GPMDPPlugin
             Shuffle,
             State,
             Status,
-            Volume
+            Volume,
+            Lyrics
         }
 
         //Info and player type of the measure
@@ -115,7 +118,9 @@ namespace GPMDPPlugin
             playstate,
             connect,
             repeat,
-            shuffle
+            shuffle,
+            rating,
+            lyrics
         }
 
         //Check if the GPMDP websocket is connected and if it is not connect
@@ -283,6 +288,31 @@ namespace GPMDPPlugin
                                 {
                                     websocketInfoGPMDP.Shuffle = 1;
                                 }
+                            }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.rating.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                websocketInfoGPMDP.Rating = 0;
+                                foreach (JProperty ratingInfo in currentValue)
+                                {
+                                    if (ratingInfo.Name.ToString().ToLower().CompareTo("liked") == 0)
+                                    {
+                                        if (Convert.ToBoolean(ratingInfo.First))
+                                        {
+                                            websocketInfoGPMDP.Rating = 1;
+                                        }
+                                    }
+                                    else if (ratingInfo.Name.ToString().ToLower().CompareTo("disliked") == 0)
+                                    {
+                                        if (Convert.ToBoolean(ratingInfo.First))
+                                        {
+                                            websocketInfoGPMDP.Rating = -1;
+                                        }
+                                    }
+                                }
+                            }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.lyrics.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                websocketInfoGPMDP.Lyrics = currentValue.ToString();
                             }
                         }
                     }
@@ -544,6 +574,10 @@ namespace GPMDPPlugin
                     InfoType = MeasureInfoType.Volume;
                     break;
 
+                case "lyrics":
+                    InfoType = MeasureInfoType.Lyrics;
+                    break;
+                    
                 default:
                     API.Log(API.LogType.Error, "GPMDPPlugin.dll: InfoType=" + infoType + " not valid, assuming title");
                     InfoType = MeasureInfoType.Title;
@@ -614,21 +648,18 @@ namespace GPMDPPlugin
             {
                 case MeasureInfoType.State:
                     return websocketInfoGPMDP.State;
-
                 case MeasureInfoType.Status:
                     return websocketInfoGPMDP.Status;
-
                 case MeasureInfoType.Repeat:
                     return websocketInfoGPMDP.Repeat;
-
                 case MeasureInfoType.Shuffle:
                     return websocketInfoGPMDP.Shuffle;
-
                 case MeasureInfoType.Volume:
                     return websocketInfoGPMDP.Volume;
-
                 case MeasureInfoType.Progress:
                     return websocketInfoGPMDP.Progress;
+                case MeasureInfoType.Rating:
+                    return websocketInfoGPMDP.Rating;
             }
 
             return 0.0;
@@ -640,36 +671,27 @@ namespace GPMDPPlugin
             {
                 case MeasureInfoType.Artist:
                     return websocketInfoGPMDP.Artist;
-
                 case MeasureInfoType.Album:
                     return websocketInfoGPMDP.Album;
-
                 case MeasureInfoType.Title:
                     return websocketInfoGPMDP.Title;
-
                 case MeasureInfoType.Number:
                     return websocketInfoGPMDP.Number;
-
                 case MeasureInfoType.Year:
                     return websocketInfoGPMDP.Year;
-
                 case MeasureInfoType.Genre:
                     return websocketInfoGPMDP.Genre;
-
                 case MeasureInfoType.Cover:
                     return websocketInfoGPMDP.Cover;
-
                 case MeasureInfoType.CoverWebAddress:
                     return websocketInfoGPMDP.CoverWebAddress;
-
                 case MeasureInfoType.Duration:
                     return websocketInfoGPMDP.Duration;
-
                 case MeasureInfoType.Position:
                     return websocketInfoGPMDP.Position;
+                case MeasureInfoType.Lyrics:
+                    return websocketInfoGPMDP.Lyrics;
 
-                case MeasureInfoType.Rating:
-                    return websocketInfoGPMDP.Rating;
 
                 //These values are integers returned in update
                 case MeasureInfoType.Repeat:
@@ -683,6 +705,8 @@ namespace GPMDPPlugin
                 case MeasureInfoType.Progress:
                     return null;
                 case MeasureInfoType.State:
+                    return null;
+                case MeasureInfoType.Rating:
                     return null;
             }
             return "";

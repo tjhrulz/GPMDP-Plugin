@@ -51,7 +51,7 @@ namespace GPMDPPlugin
             //public string File { get; set; }
             public string Duration { get; set; }
             public string Position { get; set; }
-            public int Progress { get; set; }
+            public double Progress { get; set; }
             public int DurationInms { get; set; }
             public int PositionInms { get; set; }
             public int Rating { get; set; }
@@ -154,9 +154,11 @@ namespace GPMDPPlugin
 
                 ws.OnMessage += (sender, d) =>
                 {
-                    String type = d.Data.Substring(12, d.Data.IndexOf(",") - 13);
+                    //Get the location of what type of info this is, which is formatted as :"%%%%%%",
+                    String type = d.Data.Substring(d.Data.IndexOf(":") +2, d.Data.IndexOf(",") - d.Data.IndexOf(":")-3);
                     bool acceptedType = false;
-                    
+                    //API.Log(API.LogType.Notice, "type:" + type);
+
                     foreach (GPMInfoSupported currType in Enum.GetValues(typeof(GPMInfoSupported)))
                     {
                         if(currType.ToString().CompareTo(type.ToLower()) == 0)
@@ -197,7 +199,7 @@ namespace GPMDPPlugin
                                     if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
                                     {
                                         websocketInfoGPMDP.PositionInms = Convert.ToInt32(trackInfo.First);
-                                        websocketInfoGPMDP.Progress = (int)((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
+                                        websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
                                         int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
                                         int trackMinutes = trackSeconds / 60;
                                         trackSeconds = trackSeconds % 60;
@@ -207,7 +209,7 @@ namespace GPMDPPlugin
                                     else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
                                     {
                                         websocketInfoGPMDP.DurationInms = Convert.ToInt32(trackInfo.First);
-                                        websocketInfoGPMDP.Progress = (int)((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
+                                        websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
                                         int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
                                         int trackMinutes = trackSeconds / 60;
                                         trackSeconds = trackSeconds % 60;
@@ -316,6 +318,31 @@ namespace GPMDPPlugin
                             }
                         }
                     }
+                    else if (type.ToString().CompareTo("result") == 0 && acceptedVersion == true)
+                    {
+
+                        //JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
+                        //JArray arrayData = new JArray(data);
+                        ////API.Log(API.LogType.Notice, "data:" + data);
+                        //foreach (JToken token in arrayData)
+                        //{
+                        //    JToken currentProperty = token.First.Last;
+                        //    JToken currentValue = token.Last.Last;
+                        //
+                        //    foreach (JProperty trackInfo in currentValue)
+                        //    {
+                        //        JToken currentPropertyT = trackInfo.Name;
+                        //        JToken currentValueT = trackInfo.First;
+                        //
+                        //
+                        //        //API.Log(API.LogType.Notice, "prop:" + currentPropertyT);
+                        //        //API.Log(API.LogType.Notice, "value:" + currentValueT);
+                        //        API.Log(API.LogType.Notice, currentPropertyT + ":" + currentValueT);
+                        //    }
+                        //
+                        //}
+                        ////API.Log(API.LogType.Notice, "data:" + d.Data);
+                    }
                 };
 
 
@@ -415,7 +442,7 @@ namespace GPMDPPlugin
             repeatString += "}";
             ws.SendAsync(repeatString, null);
         }
-        private static void GPMDPPSetPosition(int timeInms)
+        private static void GPMDPPSetPosition(double timeInms)
         {
             String repeatString = "{\n";
             repeatString += "\"namespace\": \"playback\",\n";
@@ -425,6 +452,17 @@ namespace GPMDPPlugin
             ws.SendAsync(repeatString, null);
         }
 
+        //UNUSED, turns out you can not do a manual request to get genre. Shelved until GPMDP supports it which they have no plans to
+        private static void GPMDPGetExtraSongInfo()
+        {
+            //TODO change the requestID from being a constant to using an internal ID system.
+            String playPauseString = "{\n";
+            playPauseString += "\"namespace\": \"playback\",\n";
+            playPauseString += "\"method\": \"getCurrentTrack\",\n";
+            playPauseString += "\"requestID\": " + 1 + "\n";
+            playPauseString += "}";
+            ws.SendAsync(playPauseString, null);
+        }
         //For downloading the image from the internet
         public static void GetImageFromUrl(string url, string filePath)
         {

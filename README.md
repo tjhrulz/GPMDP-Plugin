@@ -2,10 +2,12 @@
 A plugin that makes available the music info [Google Play Music Desktop Player](https://www.googleplaymusicdesktopplayer.com/) to rainmeter skins.  
 Has full media control support as well (Play/Pause, Next, Previous, Shuffle, Repeat, etc.)  
 Included in this repo is a example skin that shows how to use every measure and bang.  
-Current state: Standard media info feature set and controls. Rating and Lyrics support just added 
-Future: Support for setting the rating, next queued songs info, getting the theme from GPMDP, and get and set for GPMDP Volume control planned for future versions.  
+Current state: Standard media info feature set and controls. Rating and Lyrics support just added  
+Future: Next queued songs info, getting the theme from GPMDP, and get and set for GPMDP Volume control planned for future versions.  
   
-#Full list of supported measure and bang types  
+**Note:** Please see included installer on how to grant the plugin access to media controls. If no info is shown please see helper for how to setup GPMDP, in the future the helper will be replaced with a link to the wiki with an explanation on how to set it up.
+  
+##Full list of supported measure and bang types  
 ###MEASURE TYPES
 **Title, Artist, Album** - String of current playing songs info, blank if no info    
 **Cover** - String of the path where the current album art is downloaded to, set attribute CoverPath to define where to download it, set attribute DefaultPath to set what image to show while waiting for the album art to download   
@@ -25,7 +27,11 @@ I recommend including a skin to allow the user to enter in the 4 digit pin if yo
 **Previous, PlayPause, Next** - Self explanitory, note previous set the song back to the start before going back to the previous song, PlayPause is a toggle and there is not currently a play or pause that just does that if it is requested in the future I could add this but GPMDP does not support it
 **Repeat** - Toggles through repeat modes, order goes None -> Repeat All -> Repeat One ->  
 **Shuffle** - Toggles through shuffle modes, order goes None -> Shuffle All **NOTE** GPMDP shuffle support is broken is some cases see issue [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)  
+**ToggleThumbsUp** and **ToggleThumbsDown** - Toggles the song being thumbed up or down, to set it to a specific state see SetRating  
+**SetRating #** when # is an integer, -1 is thumbs down, 0 is no rating, 1 is thumbs up. **UNTESTED**  
 **key ####** or **keycode ####** - Where #### is the 4 digit authentication code for GPMDP used to elavate connection status from 1 to 2, note this only has to be done once per machine and then it is saved in the rainmeter.data file. If connection status is 0 then GPMDP is not setup and doing this will do nothing.  
-  
-  
-Note: Please see included installer on how to grant the plugin access to media controls. If no info is shown please see helper for how to setup GPMDP, in the future the helper replaced with a link to the wiki with an explanation on how to set it up.
+
+##List of current bugs:
+Shuffle is incorrectly reported in some cases. This an issue with GPMDP's websocket API, to track progress see [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)   
+Rating is not send for the first song if rainmeter is opened after a song has been selected in GPMDP. This an issue with GPMDP's websocket API, to track progress see [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2203)  
+All measures share the same cover and default cover location, (The spotify plugin is the same way) so if you are using two different GPMDP skins they will share those images. This is going to be a lot of work to fix and may have an impact on performance so this is low priority. So dont hard code images to use that path, use the MeasureCover instead as it correctly reflects them path.

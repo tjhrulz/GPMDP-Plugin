@@ -157,7 +157,7 @@ namespace GPMDPPlugin
                     //Get the location of what type of info this is, which is formatted as :"%%%%%%",
                     String type = d.Data.Substring(d.Data.IndexOf(":") +2, d.Data.IndexOf(",") - d.Data.IndexOf(":")-3);
                     bool acceptedType = false;
-                    //API.Log(API.LogType.Notice, "type:" + type);
+                    API.Log(API.LogType.Notice, "type:" + type);
 
                     foreach (GPMInfoSupported currType in Enum.GetValues(typeof(GPMInfoSupported)))
                     {
@@ -434,7 +434,7 @@ namespace GPMDPPlugin
             shuffleString += "}";
             ws.SendAsync(shuffleString, null);
         }
-        private static void GPMDPPToggleRepeat()
+        private static void GPMDPToggleRepeat()
         {
             String repeatString = "{\n";
             repeatString += "\"namespace\": \"playback\",\n";
@@ -442,12 +442,41 @@ namespace GPMDPPlugin
             repeatString += "}";
             ws.SendAsync(repeatString, null);
         }
-        private static void GPMDPPSetPosition(double timeInms)
+        private static void GPMDPSetPosition(double timeInms)
         {
             String repeatString = "{\n";
             repeatString += "\"namespace\": \"playback\",\n";
             repeatString += "\"method\": \"setCurrentTime\",\n";
             repeatString += "\"arguments\": [" + timeInms + "]\n";
+            repeatString += "}";
+            ws.SendAsync(repeatString, null);
+        }
+        private static void GPMDPToggleThumbsUp()
+        {
+            String repeatString = "{\n";
+            repeatString += "\"namespace\": \"rating\",\n";
+            repeatString += "\"method\": \"toggleThumbsUp\"\n";
+            repeatString += "}";
+            ws.SendAsync(repeatString, null);
+        }
+        private static void GPMDPToggleThumbsDown()
+        {
+            String repeatString = "{\n";
+            repeatString += "\"namespace\": \"rating\",\n";
+            repeatString += "\"method\": \"toggleThumbsDown\"\n";
+            repeatString += "}";
+            ws.SendAsync(repeatString, null);
+        }
+        private static void GPMDPSetRating(int rating)
+        {
+            if (rating == -1) { rating = 1; }
+            else if (rating == 0) { rating = 3; }
+            else if (rating == -1) { rating = 5; }
+
+            String repeatString = "{\n";
+            repeatString += "\"namespace\": \"rating\",\n";
+            repeatString += "\"method\": \"setRating\",\n";
+            repeatString += "\"arguments\": [" + rating + "]\n";
             repeatString += "}";
             ws.SendAsync(repeatString, null);
         }
@@ -463,6 +492,8 @@ namespace GPMDPPlugin
             playPauseString += "}";
             ws.SendAsync(playPauseString, null);
         }
+
+
         //For downloading the image from the internet
         public static void GetImageFromUrl(string url, string filePath)
         {
@@ -639,6 +670,12 @@ namespace GPMDPPlugin
             {
                 GPMDPPlayPause();
             }
+            else if (a.Equals("play"))
+            {
+            }
+            else if (a.Equals("pause"))
+            {
+            }
             else if (a.Equals("next"))
             {
                 GPMDPForward();
@@ -649,22 +686,30 @@ namespace GPMDPPlugin
             }
             else if (a.Equals("repeat"))
             {
-                GPMDPPToggleRepeat();
+                GPMDPToggleRepeat();
             }
             else if (a.Equals("shuffle"))
             {
                 GPMDPToggleShuffle();
             }
-            else if (a.Equals("play"))
+            else if (a.Equals("togglethumbsup"))
             {
+                API.Log(API.LogType.Notice, "toggling");
+                GPMDPToggleThumbsUp();
             }
-            else if (a.Equals("pause"))
+            else if (a.Equals("togglethumbsdown"))
             {
+                GPMDPToggleThumbsDown();
+            }
+            else if (a.Contains("setrating"))
+            {
+                int rating = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
+                GPMDPSetRating(rating);
             }
             else if (a.Contains("setposition"))
             {
                 int percent = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
-                GPMDPPSetPosition(websocketInfoGPMDP.DurationInms * percent / 100);
+                GPMDPSetPosition(websocketInfoGPMDP.DurationInms * percent / 100);
             }
             else if (a.Contains("key"))
             {

@@ -31,9 +31,9 @@ namespace GPMDPPlugin
                 Artist = "";
                 Album = "";
                 Title = "";
-                Number = "";
-                Year = "";
-                Genre = "";
+                //Number = "";
+                //Year = "";
+                //Genre = "";
                 Cover = "";
                 CoverWebAddress = "";
                 //File = "";
@@ -45,9 +45,9 @@ namespace GPMDPPlugin
             public string Artist { get; set; }
             public string Album { get; set; }
             public string Title { get; set; }
-            public string Number { get; set; }
-            public string Year { get; set; }
-            public string Genre { get; set; }
+            //public string Number { get; set; }
+            //public string Year { get; set; }
+            //public string Genre { get; set; }
             public string Cover { get; set; }
             public string CoverWebAddress { get; set; }
             //public string File { get; set; }
@@ -71,9 +71,9 @@ namespace GPMDPPlugin
             Artist,
             Album,
             Title,
-            Number,
-            Year,
-            Genre,
+            //Number,
+            //Year,
+            //Genre,
             Cover,
             CoverWebAddress,
             Duration,
@@ -118,6 +118,7 @@ namespace GPMDPPlugin
         //The channel names that are handled in the OnMessage for the GPMDP websocket
         enum GPMInfoSupported
         {
+            //Note this list does not include 2 theme support channels
             api_version,
             track,
             time,
@@ -126,7 +127,8 @@ namespace GPMDPPlugin
             repeat,
             shuffle,
             rating,
-            lyrics
+            lyrics,
+            volume
         }
 
         //Check if the GPMDP websocket is connected and if it is not connect
@@ -323,6 +325,10 @@ namespace GPMDPPlugin
                             {
                                 websocketInfoGPMDP.Lyrics = currentValue.ToString();
                             }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.volume.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                websocketInfoGPMDP.Volume = Convert.ToInt16(currentValue);
+                            }
                         }
                     }
                     else if (type.CompareTo("result") == 0 && acceptedVersion == true)
@@ -515,6 +521,21 @@ namespace GPMDPPlugin
             repeatString += "}";
             ws.SendAsync(repeatString, null);
         }
+        private static void GPMDPSetVolume(String volume)
+        {
+            int currentVolume = websocketInfoGPMDP.Volume;
+            int volumeToSet = 0;
+            if (volume.Contains("-")) { volumeToSet = currentVolume - Convert.ToInt16(volume.Substring(volume.IndexOf("-") + 1)); }
+            else if (volume.Contains("+")) { volumeToSet = currentVolume + Convert.ToInt16(volume.Substring(volume.IndexOf("+") + 1)); }
+            else { volumeToSet = Convert.ToInt16(volume); }
+
+            String repeatString = "{\n";
+            repeatString += "\"namespace\": \"volume\",\n";
+            repeatString += "\"method\": \"setVolume\",\n";
+            repeatString += "\"arguments\": [" + volumeToSet + "]\n";
+            repeatString += "}";
+            ws.SendAsync(repeatString, null);
+        }
 
         //UNUSED, turns out you can not do a manual request to get genre. Shelved until GPMDP supports it which they have no plans to
         private static void GPMDPGetExtraSongInfo()
@@ -615,17 +636,17 @@ namespace GPMDPPlugin
                     InfoType = MeasureInfoType.Title;
                     break;
 
-                case "number":
-                    InfoType = MeasureInfoType.Number;
-                    break;
-
-                case "year":
-                    InfoType = MeasureInfoType.Year;
-                    break;
-
-                case "genre":
-                    InfoType = MeasureInfoType.Genre;
-                    break;
+                //case "number":
+                //    InfoType = MeasureInfoType.Number;
+                //    break;
+                //
+                //case "year":
+                //    InfoType = MeasureInfoType.Year;
+                //    break;
+                //
+                //case "genre":
+                //    InfoType = MeasureInfoType.Genre;
+                //    break;
 
                 case "cover":
                     InfoType = MeasureInfoType.Cover;
@@ -753,6 +774,11 @@ namespace GPMDPPlugin
                 int percent = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
                 GPMDPSetPosition(websocketInfoGPMDP.DurationInms * percent / 100);
             }
+            else if (a.Contains("setvolume"))
+            {
+                String volume = args.Substring(args.LastIndexOf(" "));
+                GPMDPSetVolume(volume);
+            }
             else if (a.Contains("key"))
             {
                 //Get the last 4 chars of the keycode, this should ensure that we always get it even when bang is a little off
@@ -802,12 +828,12 @@ namespace GPMDPPlugin
                     return websocketInfoGPMDP.Album;
                 case MeasureInfoType.Title:
                     return websocketInfoGPMDP.Title;
-                case MeasureInfoType.Number:
-                    return websocketInfoGPMDP.Number;
-                case MeasureInfoType.Year:
-                    return websocketInfoGPMDP.Year;
-                case MeasureInfoType.Genre:
-                    return websocketInfoGPMDP.Genre;
+                //case MeasureInfoType.Number:
+                //    return websocketInfoGPMDP.Number;
+                //case MeasureInfoType.Year:
+                //    return websocketInfoGPMDP.Year;
+                //case MeasureInfoType.Genre:
+                //    return websocketInfoGPMDP.Genre;
                 case MeasureInfoType.Cover:
                     return websocketInfoGPMDP.Cover;
                 case MeasureInfoType.CoverWebAddress:

@@ -128,7 +128,8 @@ namespace GPMDPPlugin
             shuffle,
             rating,
             lyrics,
-            volume
+            volume,
+            queue
         }
 
         //Check if the GPMDP websocket is connected and if it is not connect
@@ -329,6 +330,18 @@ namespace GPMDPPlugin
                             {
                                 websocketInfoGPMDP.Volume = Convert.ToInt16(currentValue);
                             }
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.queue.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                API.Log(API.LogType.Notice, "queue:" + currentValue);
+                                foreach (JProperty trackInfo in currentValue)
+                                {
+                                    API.Log(API.LogType.Notice, trackInfo.Name.ToString() + ":" + trackInfo.First.ToString());
+                                    if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                                    {
+                                        //websocketInfoGPMDP.Title = trackInfo.First.ToString();
+                                    }
+                                }
+                            }
                         }
                     }
                     else if (type.CompareTo("result") == 0 && acceptedVersion == true)
@@ -528,6 +541,9 @@ namespace GPMDPPlugin
             if (volume.Contains("-")) { volumeToSet = currentVolume - Convert.ToInt16(volume.Substring(volume.IndexOf("-") + 1)); }
             else if (volume.Contains("+")) { volumeToSet = currentVolume + Convert.ToInt16(volume.Substring(volume.IndexOf("+") + 1)); }
             else { volumeToSet = Convert.ToInt16(volume); }
+
+            if(volumeToSet > 100) { volumeToSet = 100;  }
+            else if(volumeToSet < 0) { volumeToSet = 0; }
 
             String repeatString = "{\n";
             repeatString += "\"namespace\": \"volume\",\n";

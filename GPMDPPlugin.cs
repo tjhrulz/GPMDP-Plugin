@@ -26,6 +26,7 @@ namespace GPMDPPlugin
                 PositionInms = 0;
                 Progress = 0;
                 Rating = 0;
+                ThemeType = 0;
 
                 Artist = "";
                 Album = "";
@@ -39,6 +40,7 @@ namespace GPMDPPlugin
                 Duration = "";
                 Position = "";
                 Lyrics = "";
+                ThemeColor = "222, 79, 44";
             }
             public string Artist { get; set; }
             public string Album { get; set; }
@@ -61,6 +63,8 @@ namespace GPMDPPlugin
             public int Status { get; set; }
             public int Volume { get; set; }
             public string Lyrics { get; set; }
+            public int ThemeType { get; set; }
+            public string ThemeColor { get; set; }
         }
         enum MeasureInfoType
         {
@@ -81,7 +85,9 @@ namespace GPMDPPlugin
             State,
             Status,
             Volume,
-            Lyrics
+            Lyrics,
+            ThemeType,
+            ThemeColor
         }
 
         //Info and player type of the measure
@@ -157,7 +163,7 @@ namespace GPMDPPlugin
                     //Get the location of what type of info this is, which is formatted as :"%%%%%%",
                     String type = d.Data.Substring(d.Data.IndexOf(":") +2, d.Data.IndexOf(",") - d.Data.IndexOf(":")-3);
                     bool acceptedType = false;
-                    API.Log(API.LogType.Notice, "type:" + type);
+                    //API.Log(API.LogType.Notice, "type:" + type);
 
                     foreach (GPMInfoSupported currType in Enum.GetValues(typeof(GPMInfoSupported)))
                     {
@@ -293,24 +299,25 @@ namespace GPMDPPlugin
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.rating.ToString()) == 0 && acceptedVersion == true)
                             {
-                                websocketInfoGPMDP.Rating = 0;
+                                int internalRating = 0;
                                 foreach (JProperty ratingInfo in currentValue)
                                 {
                                     if (ratingInfo.Name.ToString().ToLower().CompareTo("liked") == 0)
                                     {
                                         if (Convert.ToBoolean(ratingInfo.First))
                                         {
-                                            websocketInfoGPMDP.Rating = 1;
+                                            internalRating = 1;
                                         }
                                     }
                                     else if (ratingInfo.Name.ToString().ToLower().CompareTo("disliked") == 0)
                                     {
                                         if (Convert.ToBoolean(ratingInfo.First))
                                         {
-                                            websocketInfoGPMDP.Rating = -1;
+                                            internalRating = -1;
                                         }
                                     }
                                 }
+                                websocketInfoGPMDP.Rating = internalRating;
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.lyrics.ToString()) == 0 && acceptedVersion == true)
                             {
@@ -318,7 +325,7 @@ namespace GPMDPPlugin
                             }
                         }
                     }
-                    else if (type.ToString().CompareTo("result") == 0 && acceptedVersion == true)
+                    else if (type.CompareTo("result") == 0 && acceptedVersion == true)
                     {
 
                         //JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
@@ -342,6 +349,34 @@ namespace GPMDPPlugin
                         //
                         //}
                         ////API.Log(API.LogType.Notice, "data:" + d.Data);
+                    }
+                    else if(type.Contains("theme"))
+                    {
+                        JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
+                        JArray arrayData = new JArray(data);
+                        //API.Log(API.LogType.Notice, "data:" + data);
+                        foreach (JToken token in arrayData)
+                        {
+                            JToken currentProperty = token.First.Last;
+                            JToken currentValue = token.Last.Last;
+
+                            if (currentProperty.ToString().ToLower().Contains("themetype") && acceptedVersion == true)
+                            {
+                                if (currentValue.ToString().ToUpper().CompareTo("FULL") == 0)
+                                {
+                                    websocketInfoGPMDP.ThemeType = 1;
+                                }
+                                else
+                                {
+                                    websocketInfoGPMDP.ThemeType = 0;
+                                }
+                            }
+                            else if (currentProperty.ToString().ToLower().Contains("themecolor") && acceptedVersion == true)
+                            {
+                                String rgbString = currentValue.ToString();
+                                websocketInfoGPMDP.ThemeColor = rgbString.Substring(rgbString.IndexOf("(") + 1, rgbString.IndexOf(")") - rgbString.IndexOf("(") - 1);
+                            }
+                        }
                     }
                 };
 
@@ -646,7 +681,15 @@ namespace GPMDPPlugin
                 case "lyrics":
                     InfoType = MeasureInfoType.Lyrics;
                     break;
-                    
+
+                case "themetype":
+                    InfoType = MeasureInfoType.ThemeType;
+                    break;
+
+                case "themecolor":
+                    InfoType = MeasureInfoType.ThemeColor;
+                    break;
+
                 default:
                     API.Log(API.LogType.Error, "GPMDPPlugin.dll: InfoType=" + infoType + " not valid, assuming title");
                     InfoType = MeasureInfoType.Title;
@@ -694,7 +737,6 @@ namespace GPMDPPlugin
             }
             else if (a.Equals("togglethumbsup"))
             {
-                API.Log(API.LogType.Notice, "toggling");
                 GPMDPToggleThumbsUp();
             }
             else if (a.Equals("togglethumbsdown"))
@@ -743,6 +785,8 @@ namespace GPMDPPlugin
                     return websocketInfoGPMDP.Progress;
                 case MeasureInfoType.Rating:
                     return websocketInfoGPMDP.Rating;
+                case MeasureInfoType.ThemeType:
+                    return websocketInfoGPMDP.ThemeType;
             }
 
             return 0.0;
@@ -774,6 +818,8 @@ namespace GPMDPPlugin
                     return websocketInfoGPMDP.Position;
                 case MeasureInfoType.Lyrics:
                     return websocketInfoGPMDP.Lyrics;
+                case MeasureInfoType.ThemeColor:
+                    return websocketInfoGPMDP.ThemeColor;
 
 
                 //These values are integers returned in update
@@ -790,6 +836,8 @@ namespace GPMDPPlugin
                 case MeasureInfoType.State:
                     return null;
                 case MeasureInfoType.Rating:
+                    return null;
+                case MeasureInfoType.ThemeType:
                     return null;
             }
             return "";

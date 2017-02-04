@@ -18,6 +18,8 @@ Future: Next queued songs info, getting the theme from GPMDP, and get and set fo
 **Shuffle** - Integer of if GPMDP is set to shuffle, 0 is no, 1 is yes **NOTE** GPMDP shuffle support is broken is some cases see issue [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)  
 **Rating** - Integer of the rating of the song, -1 is thumbs down, 0 is no rating, 1 is thumbs up  
 **Lyrics** - String of the lyrics of the song. **Note** While downloading the lyrics or if there are none know this string will be "" Thus this changes twice on any song with lyrics and only once on a song without lyrics  
+**themetype** - Integer of the type of theme GPMDP is using, 0 is white, 1 is black  
+**themecolor** - String of RGB value without transparency of the theme color in GPMDP **Note** custom colors are not supported  
 **State** - Integer of the play state of GPMDP, 0 is stopped, 1 is playing, 2 is paused  
 **ConnectionStatus** or **Status** - Integer status of the connection to GPMDP, -1 is plugin has not finished initializing and will become 0-2 in a moment, 0 is disconnected, 1 is connected but without remote control access, 2 is full connection  
 I recommend including a skin to allow the user to enter in the 4 digit pin if you redistribute this plugin. In the future I will have a guide in the wiki walking through how to setup GPMDP, for the future just see the included installer and helper skin for how to inform your users. 
@@ -34,4 +36,5 @@ I recommend including a skin to allow the user to enter in the 4 digit pin if yo
 ##List of current bugs:
 Shuffle is incorrectly reported in some cases. This an issue with GPMDP's websocket API, to track progress see [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)   
 Rating is not send for the first song if rainmeter is opened after a song has been selected in GPMDP. This an issue with GPMDP's websocket API, to track progress see [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2203)  
+If the theme color in GPMDP is a custom color the theme color is never sent. This is an issue with GPMDP's websocket API, seeing as these are undocumented and were added at the request of someone making an android remote companion app and I have bothered the GPMDP guys with enough issue request I have not opened a issue yet.  
 All measures share the same cover and default cover location, (The spotify plugin is the same way) so if you are using two different GPMDP skins they will share those images. This is going to be a lot of work to fix and may have an impact on performance so this is low priority. So dont hard code images to use that path, use the MeasureCover instead as it correctly reflects them path.

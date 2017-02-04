@@ -208,7 +208,10 @@ namespace GPMDPPlugin
                                     if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
                                     {
                                         websocketInfoGPMDP.PositionInms = Convert.ToInt32(trackInfo.First);
-                                        websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
+                                        if (websocketInfoGPMDP.DurationInms != 0)
+                                        {
+                                            websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
+                                        }
                                         int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
                                         int trackMinutes = trackSeconds / 60;
                                         trackSeconds = trackSeconds % 60;
@@ -218,7 +221,10 @@ namespace GPMDPPlugin
                                     else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
                                     {
                                         websocketInfoGPMDP.DurationInms = Convert.ToInt32(trackInfo.First);
-                                        websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
+                                        if (websocketInfoGPMDP.DurationInms != 0)
+                                        {
+                                            websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
+                                        }
                                         int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
                                         int trackMinutes = trackSeconds / 60;
                                         trackSeconds = trackSeconds % 60;

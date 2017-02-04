@@ -128,8 +128,8 @@ namespace GPMDPPlugin
             shuffle,
             rating,
             lyrics,
-            volume,
-            queue
+            volume
+            //queue
         }
 
         //Check if the GPMDP websocket is connected and if it is not connect
@@ -330,18 +330,18 @@ namespace GPMDPPlugin
                             {
                                 websocketInfoGPMDP.Volume = Convert.ToInt16(currentValue);
                             }
-                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.queue.ToString()) == 0 && acceptedVersion == true)
-                            {
-                                API.Log(API.LogType.Notice, "queue:" + currentValue);
-                                foreach (JProperty trackInfo in currentValue)
-                                {
-                                    API.Log(API.LogType.Notice, trackInfo.Name.ToString() + ":" + trackInfo.First.ToString());
-                                    if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
-                                    {
-                                        //websocketInfoGPMDP.Title = trackInfo.First.ToString();
-                                    }
-                                }
-                            }
+                            //else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.queue.ToString()) == 0 && acceptedVersion == true)
+                            //{
+                            //    API.Log(API.LogType.Notice, "queue:" + currentValue);
+                            //    foreach (JProperty trackInfo in currentValue)
+                            //    {
+                            //        API.Log(API.LogType.Notice, trackInfo.Name.ToString() + ":" + trackInfo.First.ToString());
+                            //        if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                            //        {
+                            //            //websocketInfoGPMDP.Title = trackInfo.First.ToString();
+                            //        }
+                            //    }
+                            //}
                         }
                     }
                     else if (type.CompareTo("result") == 0 && acceptedVersion == true)
@@ -496,8 +496,16 @@ namespace GPMDPPlugin
             repeatString += "}";
             ws.SendAsync(repeatString, null);
         }
-        private static void GPMDPSetPosition(double timeInms)
+        private static void GPMDPSetPosition(String percent)
         {
+            int currentDuration = websocketInfoGPMDP.DurationInms;
+            int timeInms = websocketInfoGPMDP.PositionInms;
+
+            if (percent.Contains("-")) { timeInms = timeInms - Convert.ToInt16(percent.Substring(percent.IndexOf("-") + 1)) * currentDuration / 100; ; }
+            else if (percent.Contains("+")) { timeInms = timeInms + Convert.ToInt16(percent.Substring(percent.IndexOf("+") + 1)) * currentDuration / 100; ; }
+            else { timeInms = Convert.ToInt32(percent) * currentDuration / 100; }
+             
+
             String repeatString = "{\n";
             repeatString += "\"namespace\": \"playback\",\n";
             repeatString += "\"method\": \"setCurrentTime\",\n";
@@ -713,6 +721,7 @@ namespace GPMDPPlugin
 
                 case "volume":
                     InfoType = MeasureInfoType.Volume;
+                    maxValue = 100;
                     break;
 
                 case "lyrics":
@@ -787,8 +796,8 @@ namespace GPMDPPlugin
             }
             else if (a.Contains("setposition"))
             {
-                int percent = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
-                GPMDPSetPosition(websocketInfoGPMDP.DurationInms * percent / 100);
+                String percent = args.Substring(args.LastIndexOf(" "));
+                GPMDPSetPosition(percent);
             }
             else if (a.Contains("setvolume"))
             {

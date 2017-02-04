@@ -844,6 +844,10 @@ namespace GPMDPPlugin
                     return websocketInfoGPMDP.Rating;
                 case MeasureInfoType.ThemeType:
                     return websocketInfoGPMDP.ThemeType;
+                case MeasureInfoType.Duration:
+                    return Math.Floor(((double)websocketInfoGPMDP.DurationInms / 1000));
+                case MeasureInfoType.Position:
+                    return Math.Floor(((double)websocketInfoGPMDP.PositionInms / 1000));
             }
 
             return 0.0;

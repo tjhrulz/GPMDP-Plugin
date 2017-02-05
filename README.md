@@ -29,7 +29,7 @@ I recommend including a skin to allow the user to enter in the 4 digit pin if yo
 **SetPosition ##.####** - Where ##.#### is a Double between 0-100. Sets the what percent of the way through the song the song is. 
 **SetVolume ###** - Where ### is a Integer beween 0-100, add + or - in front to set the volume relatively
 **Note** this and Progress just started supporting double's instead of int, if you need an int or are having issues contact me.   
-**Previous, PlayPause, Next** - Self explanitory, note previous set the song back to the start before going back to the previous song, PlayPause is a toggle and there is not currently a play or pause that just does that if it is requested in the future I could add this but GPMDP does not support it
+**Previous, PlayPause, Next** - Self explanitory, note previous set the song back to the start before going back to the previous song, PlayPause is a toggle and there is not currently a play or pause that just does that if it is requested in the future I could add this but GPMDP does not support it  
 **Repeat** - Toggles through repeat modes, order goes None -> Repeat All -> Repeat One ->  
 **Shuffle** - Toggles through shuffle modes, order goes None -> Shuffle All **NOTE** GPMDP shuffle support is broken is some cases see issue [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)  
 **ToggleThumbsUp** and **ToggleThumbsDown** - Toggles the song being thumbed up or down, to set it to a specific state see SetRating  

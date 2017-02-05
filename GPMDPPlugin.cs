@@ -251,10 +251,17 @@ namespace GPMDPPlugin
                                     }
                                     else if (trackInfo.First.ToString().Length != 0 && coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
                                     {
-                                        websocketInfoGPMDP.Cover = defaultCoverLocation;
-
-                                        Thread t = new Thread(() => GetImageFromUrl(trackInfo.First.ToString(), coverOutputLocation));
-                                        t.Start();
+                                        if (trackInfo.First.ToString().CompareTo("https://play-music.gstatic.com/fe/b4e4cdbe96eaa20575d478077df5c6b5/default_album_med.png") != 0)
+                                        {
+                                            websocketInfoGPMDP.Cover = defaultCoverLocation;
+                                            Thread t = new Thread(() => GetImageFromUrl(trackInfo.First.ToString(), coverOutputLocation));
+                                            t.Start();
+                                        }
+                                        else
+                                        {
+                                            websocketInfoGPMDP.Cover = defaultCoverLocation;
+                                            websocketInfoGPMDP.CoverWebAddress = "https://play-music.gstatic.com/fe/b4e4cdbe96eaa20575d478077df5c6b5/default_album_med.png";
+                                        }
                                     }
                                 }
                             }

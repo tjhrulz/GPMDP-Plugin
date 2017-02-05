@@ -13,9 +13,9 @@ Future: Next queued songs info
 **Cover** - String of the path where the current album art is downloaded to, set attribute CoverPath to define where to download it, set attribute DefaultPath to set what image to show while waiting for the album art to download   
 **CoverWebAddress** - String of URL location of current album art, useful for doing an onChangeAction as cover will update twice when the song changes this will only update once  
 **Position, Duration** - String of how far into the song or how long the song is, formated MM:SS  
-**Progress** - Double of how far into the song you are as a percentage. To clarify that number is formated ##.##### and has a predefined max of 100.00. **Note** this and SetPosition just started supporting double's instead of int, if you need an int or are having issues contact me.  
+**Progress** - Double of how far into the song you are as a percentage. To clarify that number is formated ##.##### and has a predefined max of 100.00.
 **Repeat** - Integer of if GPMDP is set to repeat, 0 is no, 1 is repeat one song, 2 is repeat all  
-**Shuffle** - Integer of if GPMDP is set to shuffle, 0 is no, 1 is yes **NOTE** GPMDP shuffle support is broken is some cases see issue [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)  
+**Shuffle** - Integer of if GPMDP is set to shuffle, 0 is no, 1 is yes  
 **Rating** - Integer of the rating of the song, -1 is thumbs down, 0 is no rating, 1 is thumbs up  
 **Volume** - Integer between 0-100 of what the current volume is oin GPMDP
 **Lyrics** - String of the lyrics of the song. **Note** While downloading the lyrics or if there are none know this string will be "" Thus this changes twice on any song with lyrics and only once on a song without lyrics  
@@ -26,7 +26,7 @@ Future: Next queued songs info
 I recommend including a skin to allow the user to enter in the 4 digit pin if you redistribute this plugin. In the future I will have a guide in the wiki walking through how to setup GPMDP, for the future just see the included installer and helper skin for how to inform your users. 
 
 ###BANGS
-**SetPosition ##.####** - Where ##.#### is a Double between 0-100. Sets the what percent of the way through the song the song is. 
+**SetPosition ##.####** - Where ##.#### is a Double between 0-100. Sets the what percent of the way through the song the song is.  
 **SetVolume ###** - Where ### is a Integer beween 0-100, add + or - in front to set the volume relatively
 **Note** this and Progress just started supporting double's instead of int, if you need an int or are having issues contact me.   
 **Previous, PlayPause, Next** - Self explanitory, note previous set the song back to the start before going back to the previous song, PlayPause is a toggle and there is not currently a play or pause that just does that if it is requested in the future I could add this but GPMDP does not support it  
@@ -37,7 +37,5 @@ I recommend including a skin to allow the user to enter in the 4 digit pin if yo
 **key ####** or **keycode ####** - Where #### is the 4 digit authentication code for GPMDP used to elavate connection status from 1 to 2, note this only has to be done once per machine and then it is saved in the rainmeter.data file. If connection status is 0 then GPMDP is not setup and doing this will do nothing.  
 
 ##List of current bugs:
-Shuffle is incorrectly reported in some cases. This an issue with GPMDP's websocket API, to track progress see [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)   
-Rating is not send for the first song if rainmeter is opened after a song has been selected in GPMDP. This an issue with GPMDP's websocket API, to track progress see [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2203)  
 If the theme color in GPMDP is a custom color the theme color is never sent. This is an issue with GPMDP's websocket API, seeing as these are undocumented and were added at the request of someone making an android remote companion app and I have bothered the GPMDP guys with enough issue request I have not opened a issue yet.  
 All measures share the same cover and default cover location, (The spotify plugin is the same way) so if you are using two different GPMDP skins they will share those images. This is going to be a lot of work to fix and may have an impact on performance so this is low priority. So dont hard code images to use that path, use the MeasureCover instead as it correctly reflects them path.

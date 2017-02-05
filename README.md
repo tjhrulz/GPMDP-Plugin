@@ -13,7 +13,7 @@ Future: Next queued songs info
 **Cover** - String of the path where the current album art is downloaded to, set attribute CoverPath to define where to download it, set attribute DefaultPath to set what image to show while waiting for the album art to download   
 **CoverWebAddress** - String of URL location of current album art, useful for doing an onChangeAction as cover will update twice when the song changes this will only update once  
 **Position, Duration** - String of how far into the song or how long the song is, formated MM:SS  
-**Progress** - Double of how far into the song you are as a percentage. To clarify that number is formated ##.##### and has a predefined max of 100.00. **Note** this and SetPosition just started supporting double's instead of int, if you need an int or are having issues contact me.
+**Progress** - Double of how far into the song you are as a percentage. To clarify that number is formated ##.##### and has a predefined max of 100.00. **Note** this and SetPosition just started supporting double's instead of int, if you need an int or are having issues contact me.  
 **Repeat** - Integer of if GPMDP is set to repeat, 0 is no, 1 is repeat one song, 2 is repeat all  
 **Shuffle** - Integer of if GPMDP is set to shuffle, 0 is no, 1 is yes **NOTE** GPMDP shuffle support is broken is some cases see issue [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)  
 **Rating** - Integer of the rating of the song, -1 is thumbs down, 0 is no rating, 1 is thumbs up 

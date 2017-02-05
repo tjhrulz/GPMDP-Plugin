@@ -16,7 +16,7 @@ Future: Next queued songs info
 **Progress** - Double of how far into the song you are as a percentage. To clarify that number is formated ##.##### and has a predefined max of 100.00. **Note** this and SetPosition just started supporting double's instead of int, if you need an int or are having issues contact me.  
 **Repeat** - Integer of if GPMDP is set to repeat, 0 is no, 1 is repeat one song, 2 is repeat all  
 **Shuffle** - Integer of if GPMDP is set to shuffle, 0 is no, 1 is yes **NOTE** GPMDP shuffle support is broken is some cases see issue [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)  
-**Rating** - Integer of the rating of the song, -1 is thumbs down, 0 is no rating, 1 is thumbs up 
+**Rating** - Integer of the rating of the song, -1 is thumbs down, 0 is no rating, 1 is thumbs up  
 **Volume** - Integer between 0-100 of what the current volume is oin GPMDP
 **Lyrics** - String of the lyrics of the song. **Note** While downloading the lyrics or if there are none know this string will be "" Thus this changes twice on any song with lyrics and only once on a song without lyrics  
 **themetype** - Integer of the type of theme GPMDP is using, 0 is white, 1 is black  
@@ -33,7 +33,7 @@ I recommend including a skin to allow the user to enter in the 4 digit pin if yo
 **Repeat** - Toggles through repeat modes, order goes None -> Repeat All -> Repeat One ->  
 **Shuffle** - Toggles through shuffle modes, order goes None -> Shuffle All **NOTE** GPMDP shuffle support is broken is some cases see issue [here](https://github.com/MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL-/issues/2193)  
 **ToggleThumbsUp** and **ToggleThumbsDown** - Toggles the song being thumbed up or down, to set it to a specific state see SetRating  
-**SetRating #** when # is an integer, -1 is thumbs down, 0 is no rating, 1 is thumbs up. **UNTESTED**  
+**SetRating #** when # is an integer, -1 is thumbs down, 0 is no rating, 1 is thumbs up.  
 **key ####** or **keycode ####** - Where #### is the 4 digit authentication code for GPMDP used to elavate connection status from 1 to 2, note this only has to be done once per machine and then it is saved in the rainmeter.data file. If connection status is 0 then GPMDP is not setup and doing this will do nothing.  
 
 ##List of current bugs:

@@ -7,6 +7,7 @@ using Rainmeter;
 using System.IO;
 using System.Net;
 using System.Threading;
+using System.Diagnostics;
 
 namespace GPMDPPlugin
 {
@@ -37,8 +38,8 @@ namespace GPMDPPlugin
                 Cover = "";
                 CoverWebAddress = "";
                 //File = "";
-                Duration = "";
-                Position = "";
+                Duration = "00:00";
+                Position = "00:00";
                 Lyrics = "";
                 ThemeColor = "222, 79, 44";
             }
@@ -96,24 +97,19 @@ namespace GPMDPPlugin
         //Locations of the most recent updated info
         //TODO DateTime does not track ms, this means that two things could update in the same second and now have a max.
 
-
-        //Functions specific to GPMDP player
-        private static musicInfo getGPMDPInfo()
-        {
-            return websocketInfoGPMDP;
-        }
-
         //These variables, enums, and functions are all related to support for GPMDP
         public static WebSocket ws;
         private const String supportedAPIVersion = "1.1.0";
         private static musicInfo websocketInfoGPMDP = new musicInfo();
         private static string defaultCoverLocation;
         private static string coverOutputLocation;
-        private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
         //private static int websocketState = 0;
         private static string authcode = "\0";
         private static string rainmeterFileSettingsLocation = "";
         private static bool sentInitialAuthcode = false;
+
+        private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
+        private static Thread GPMReconnectThread = new Thread(Measure.isGPMDPWebsocketConnected);
 
         //The channel names that are handled in the OnMessage for the GPMDP websocket
         enum GPMInfoSupported
@@ -137,7 +133,13 @@ namespace GPMDPPlugin
         {
             if (ws != null)
             {
-                if (websocketInfoGPMDP.Status == -1 || websocketInfoGPMDP.Status == 0) { ws.ConnectAsync(); }
+                if (websocketInfoGPMDP.Status == -1 || websocketInfoGPMDP.Status == 0)
+                {
+                    if (Process.GetProcessesByName("Google Play Music Desktop Player").Length > 0)
+                    {
+                        ws.Connect();
+                    }
+                }
                 else if (sentInitialAuthcode == false)
                 {
                     sentInitialAuthcode = true;
@@ -346,12 +348,30 @@ namespace GPMDPPlugin
                             //else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.queue.ToString()) == 0 && acceptedVersion == true)
                             //{
                             //    API.Log(API.LogType.Notice, "queue:" + currentValue);
-                            //    foreach (JProperty trackInfo in currentValue)
+                            //    foreach (JToken queueInfo in currentValue)
                             //    {
-                            //        API.Log(API.LogType.Notice, trackInfo.Name.ToString() + ":" + trackInfo.First.ToString());
-                            //        if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                            //        foreach (JProperty trackInfo in queueInfo)
                             //        {
-                            //            //websocketInfoGPMDP.Title = trackInfo.First.ToString();
+                            //            if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
+                            //            {
+                            //                API.Log(API.LogType.Notice, trackInfo.First.ToString());
+                            //            }
+                            //            else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
+                            //            {
+                            //                //API.Log(API.LogType.Notice, trackInfo.First.ToString());
+                            //            }
+                            //            else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
+                            //            {
+                            //                //API.Log(API.LogType.Notice, trackInfo.First.ToString());
+                            //            }
+                            //            else if (trackInfo.Name.ToString().ToLower().CompareTo("index") == 0)
+                            //            {
+                            //                API.Log(API.LogType.Notice, trackInfo.First.ToString());
+                            //            }
+                            //            else
+                            //            {
+                            //                //API.Log(API.LogType.Notice, trackInfo.Name.ToString() + ":" + trackInfo.First.ToString());
+                            //            }
                             //        }
                             //    }
                             //}
@@ -413,7 +433,11 @@ namespace GPMDPPlugin
                 };
 
 
-                ws.OnClose += (sender, d) => websocketInfoGPMDP.Status = 0;
+                ws.OnClose += (sender, d) =>
+                {
+                    websocketInfoGPMDP = new musicInfo();
+                    websocketInfoGPMDP.Status = 0;
+                };
                 ws.OnOpen += (sender, d) =>
                 {
                     websocketInfoGPMDP.Status = 1;
@@ -646,7 +670,7 @@ namespace GPMDPPlugin
         //Rainmeter functions
         internal Measure()
         {
-            if (GPMInitThread.ThreadState == ThreadState.Unstarted)
+            if (GPMInitThread.ThreadState == System.Threading.ThreadState.Unstarted)
             {
                 GPMInitThread.Start();
             }
@@ -831,7 +855,12 @@ namespace GPMDPPlugin
         internal virtual double Update()
         {
             //TODO Make detection of reconnection more performant
-            isGPMDPWebsocketConnected();
+
+            if (GPMReconnectThread.ThreadState == System.Threading.ThreadState.Stopped || GPMReconnectThread.ThreadState == System.Threading.ThreadState.Unstarted)
+            {
+                GPMReconnectThread = new Thread(Measure.isGPMDPWebsocketConnected);
+                GPMReconnectThread.Start();
+            }
 
             switch (InfoType)
             {

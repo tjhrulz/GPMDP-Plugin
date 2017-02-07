@@ -8,6 +8,7 @@ using System.IO;
 using System.Net;
 using System.Threading;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace GPMDPPlugin
 {
@@ -90,6 +91,17 @@ namespace GPMDPPlugin
             ThemeType,
             ThemeColor
         }
+        enum QueueInfoType
+        {
+            Artist = 0,
+            Album = 1,
+            Title = 2,
+            AlbumArt = 3,
+            Duration = 4,
+            PlayCount = 5,
+            Index = 6,
+            ID = 7
+        }
 
         //Info and player type of the measure
         private MeasureInfoType InfoType;
@@ -103,7 +115,9 @@ namespace GPMDPPlugin
 
         private static musicInfo websocketInfoGPMDP = new musicInfo();
         private static string defaultCoverLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
-        private static string coverOutputLocation;
+        private static string coverOutputLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
+        
+        private static List<string[]> queueInfoList = new List<string[]>();
 
         private static string authcode = "\0";
         private static string rainmeterFileSettingsLocation = "";
@@ -127,8 +141,8 @@ namespace GPMDPPlugin
             shuffle,
             rating,
             lyrics,
-            volume
-            //queue
+            volume,
+            queue
         }
 
         //Check if the GPMDP websocket is connected and if it is not connect
@@ -353,36 +367,50 @@ namespace GPMDPPlugin
                             {
                                 websocketInfoGPMDP.Volume = Convert.ToInt16(currentValue);
                             }
-                            //else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.queue.ToString()) == 0 && acceptedVersion == true)
-                            //{
-                            //    API.Log(API.LogType.Notice, "queue:" + currentValue);
-                            //    foreach (JToken queueInfo in currentValue)
-                            //    {
-                            //        foreach (JProperty trackInfo in queueInfo)
-                            //        {
-                            //            if (trackInfo.Name.ToString().ToLower().CompareTo("title") == 0)
-                            //            {
-                            //                API.Log(API.LogType.Notice, trackInfo.First.ToString());
-                            //            }
-                            //            else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
-                            //            {
-                            //                //API.Log(API.LogType.Notice, trackInfo.First.ToString());
-                            //            }
-                            //            else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
-                            //            {
-                            //                //API.Log(API.LogType.Notice, trackInfo.First.ToString());
-                            //            }
-                            //            else if (trackInfo.Name.ToString().ToLower().CompareTo("index") == 0)
-                            //            {
-                            //                API.Log(API.LogType.Notice, trackInfo.First.ToString());
-                            //            }
-                            //            else
-                            //            {
-                            //                //API.Log(API.LogType.Notice, trackInfo.Name.ToString() + ":" + trackInfo.First.ToString());
-                            //            }
-                            //        }
-                            //    }
-                            //}
+                            else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.queue.ToString()) == 0 && acceptedVersion == true)
+                            {
+                                //API.Log(API.LogType.Notice, "queue:" + currentValue);
+                                foreach (JToken queueInfo in currentValue)
+                                {
+                                    string[] songInfo = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
+                                    foreach (JProperty trackInfo in queueInfo)
+                                    {
+                                        if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Artist.ToString().ToLower()) == 0)
+                                        {
+                                            songInfo[(int)QueueInfoType.Artist] = trackInfo.First.ToString();
+                                        }
+                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Album.ToString().ToLower()) == 0)
+                                        {
+                                            songInfo[(int)QueueInfoType.Album] = trackInfo.First.ToString();
+                                        }
+                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Title.ToString().ToLower()) == 0)
+                                        {
+                                            songInfo[(int)QueueInfoType.Title] = trackInfo.First.ToString();
+                                        }
+                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.AlbumArt.ToString().ToLower()) == 0)
+                                        {
+                                            songInfo[(int)QueueInfoType.AlbumArt] = trackInfo.First.ToString();
+                                        }
+                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Duration.ToString().ToLower()) == 0)
+                                        {
+                                            songInfo[(int)QueueInfoType.Duration] = trackInfo.First.ToString();
+                                        }
+                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.PlayCount.ToString().ToLower()) == 0)
+                                        {
+                                            songInfo[(int)QueueInfoType.PlayCount] = trackInfo.First.ToString();
+                                        }
+                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Index.ToString().ToLower()) == 0)
+                                        {
+                                            songInfo[(int)QueueInfoType.Index] = trackInfo.First.ToString();
+                                        }
+                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.ID.ToString().ToLower()) == 0)
+                                        {
+                                            songInfo[(int)QueueInfoType.ID] = trackInfo.First.ToString();
+                                        }
+                                    }
+                                    queueInfoList.Add(songInfo);
+                                }
+                            }
                         }
                     }
                     else if (type.CompareTo("result") == 0 && acceptedVersion == true)

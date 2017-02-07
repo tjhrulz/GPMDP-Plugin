@@ -35,7 +35,7 @@ namespace GPMDPPlugin
                 //Number = "";
                 //Year = "";
                 //Genre = "";
-                Cover = "";
+                Cover = defaultCoverLocation;
                 CoverWebAddress = "";
                 //File = "";
                 Duration = "00:00";
@@ -100,16 +100,19 @@ namespace GPMDPPlugin
         //These variables, enums, and functions are all related to support for GPMDP
         public static WebSocket ws;
         private const String supportedAPIVersion = "1.1.0";
+
         private static musicInfo websocketInfoGPMDP = new musicInfo();
-        private static string defaultCoverLocation;
+        private static string defaultCoverLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
         private static string coverOutputLocation;
-        //private static int websocketState = 0;
+
         private static string authcode = "\0";
         private static string rainmeterFileSettingsLocation = "";
         private static bool sentInitialAuthcode = false;
 
         private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
         private static Thread GPMReconnectThread = new Thread(Measure.isGPMDPWebsocketConnected);
+        private static int GPMReconnectTimer;
+        private const int timeBetweenReconnectAttempts = 1000;
 
         //The channel names that are handled in the OnMessage for the GPMDP websocket
         enum GPMInfoSupported
@@ -135,9 +138,14 @@ namespace GPMDPPlugin
             {
                 if (websocketInfoGPMDP.Status == -1 || websocketInfoGPMDP.Status == 0)
                 {
-                    if (Process.GetProcessesByName("Google Play Music Desktop Player").Length > 0)
+                    int currentTicks = Environment.TickCount;
+                    if (currentTicks > GPMReconnectTimer + timeBetweenReconnectAttempts || (currentTicks < 0 && GPMReconnectTimer > 0))
                     {
-                        ws.Connect();
+                        GPMReconnectTimer = currentTicks;
+                        if (Process.GetProcessesByName("Google Play Music Desktop Player").Length > 0)
+                        {
+                            ws.Connect();
+                        }
                     }
                 }
                 else if (sentInitialAuthcode == false)
@@ -626,7 +634,7 @@ namespace GPMDPPlugin
                     {
                         Byte[] buffer = ReadStream(stream);
                         // Make sure the path folder exists
-                        System.IO.Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/SpotifyPlugin");
+                        System.IO.Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin");
                         // Write stream to file
                         File.WriteAllBytes(filePath, buffer);
                     }
@@ -711,7 +719,12 @@ namespace GPMDPPlugin
 
                 case "cover":
                     InfoType = MeasureInfoType.Cover;
-                    defaultCoverLocation = api.ReadPath("DefaultPath", "");
+                    string newCoverLocation = api.ReadPath("DefaultPath", "");
+                    if (newCoverLocation.CompareTo(defaultCoverLocation) != 0)
+                    {
+                        defaultCoverLocation = newCoverLocation;
+                        websocketInfoGPMDP.Cover = newCoverLocation;
+                    }
                     coverOutputLocation = api.ReadPath("CoverPath", "");
                     break;
 

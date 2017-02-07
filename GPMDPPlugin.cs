@@ -43,6 +43,22 @@ namespace GPMDPPlugin
                 Position = "00:00";
                 Lyrics = "";
                 ThemeColor = "222, 79, 44";
+
+                Queue = new List<string[]>();
+
+                //This loop populates queue with 21 peices of information
+                //This will be interpreted 0-9 as last 10 songs, 10 is current, 11-20 is next 10
+                for (int i = 0; i <= 20; i++)
+                {
+                    string[] info = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
+                    //TODO evaluate if I want to have different default values
+                    //I dont think I will as the user substituting "" with N/A would make more sense in most cases
+                    foreach (MeasureInfoType currInfo in Enum.GetValues(typeof(MeasureInfoType)))
+                    {
+                        info[i] = "";
+                    }
+                    Queue.Add(info);
+                }
             }
             public string Artist { get; set; }
             public string Album { get; set; }
@@ -67,6 +83,7 @@ namespace GPMDPPlugin
             public string Lyrics { get; set; }
             public int ThemeType { get; set; }
             public string ThemeColor { get; set; }
+            public List<string[]> Queue { get; set; }
         }
         enum MeasureInfoType
         {
@@ -106,9 +123,6 @@ namespace GPMDPPlugin
         //Info and player type of the measure
         private MeasureInfoType InfoType;
 
-        //Locations of the most recent updated info
-        //TODO DateTime does not track ms, this means that two things could update in the same second and now have a max.
-
         //These variables, enums, and functions are all related to support for GPMDP
         public static WebSocket ws;
         private const String supportedAPIVersion = "1.1.0";
@@ -118,6 +132,7 @@ namespace GPMDPPlugin
         private static string coverOutputLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
         
         private static List<string[]> queueInfoList = new List<string[]>();
+        //private static Thread queueUpdateThread;
 
         private static string authcode = "\0";
         private static string rainmeterFileSettingsLocation = "";
@@ -369,47 +384,9 @@ namespace GPMDPPlugin
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.queue.ToString()) == 0 && acceptedVersion == true)
                             {
-                                //API.Log(API.LogType.Notice, "queue:" + currentValue);
-                                foreach (JToken queueInfo in currentValue)
-                                {
-                                    string[] songInfo = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
-                                    foreach (JProperty trackInfo in queueInfo)
-                                    {
-                                        if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Artist.ToString().ToLower()) == 0)
-                                        {
-                                            songInfo[(int)QueueInfoType.Artist] = trackInfo.First.ToString();
-                                        }
-                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Album.ToString().ToLower()) == 0)
-                                        {
-                                            songInfo[(int)QueueInfoType.Album] = trackInfo.First.ToString();
-                                        }
-                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Title.ToString().ToLower()) == 0)
-                                        {
-                                            songInfo[(int)QueueInfoType.Title] = trackInfo.First.ToString();
-                                        }
-                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.AlbumArt.ToString().ToLower()) == 0)
-                                        {
-                                            songInfo[(int)QueueInfoType.AlbumArt] = trackInfo.First.ToString();
-                                        }
-                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Duration.ToString().ToLower()) == 0)
-                                        {
-                                            songInfo[(int)QueueInfoType.Duration] = trackInfo.First.ToString();
-                                        }
-                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.PlayCount.ToString().ToLower()) == 0)
-                                        {
-                                            songInfo[(int)QueueInfoType.PlayCount] = trackInfo.First.ToString();
-                                        }
-                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Index.ToString().ToLower()) == 0)
-                                        {
-                                            songInfo[(int)QueueInfoType.Index] = trackInfo.First.ToString();
-                                        }
-                                        else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.ID.ToString().ToLower()) == 0)
-                                        {
-                                            songInfo[(int)QueueInfoType.ID] = trackInfo.First.ToString();
-                                        }
-                                    }
-                                    queueInfoList.Add(songInfo);
-                                }
+                                //TODO Better handle both this and album art downloader being run again before the last one has finished
+                                Thread t = new Thread(() => updateQueueInfo(currentValue));
+                                t.Start();
                             }
                         }
                     }
@@ -528,7 +505,7 @@ namespace GPMDPPlugin
         }
 
         //These are functions that handle the sending of various GPMDP websocket commands
-        //In theory if these were called before the websocket has been setup the could error but that would be impossible in rianmeter so adding the overhead for checks is unneeded.
+        //In theory if these were called before the websocket has been setup the could error but that would be impossible in rainmeter so adding the overhead for checks is unneeded.
         private static void GPMDPPlayPause()
         {
             String playPauseString = "{\n";
@@ -691,8 +668,57 @@ namespace GPMDPPlugin
                 return ms.ToArray();
             }
         }
+        private static void updateQueueInfo(JToken queueInfo)
+        {
+            queueInfoList.Clear();
 
+            //API.Log(API.LogType.Notice, "queue:" + currentValue);
+            foreach (JToken track in queueInfo)
+            {
+                string[] songInfo = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
+                foreach (JProperty trackInfo in track)
+                {
+                    if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Artist.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.Artist] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Album.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.Album] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Title.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.Title] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.AlbumArt.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.AlbumArt] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Duration.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.Duration] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.PlayCount.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.PlayCount] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Index.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.Index] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.ID.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.ID] = trackInfo.First.ToString();
+                    }
+                }
+                queueInfoList.Add(songInfo);
+            }
+            updateRelativeQueue();
+        }
+        private static void updateRelativeQueue()
+        {
 
+        }
         //To be used for reading and writing values from the rainmeter settings file
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         static extern int GetPrivateProfileString(string section, string key, string defaultValue,
@@ -895,7 +921,6 @@ namespace GPMDPPlugin
 
         internal virtual double Update()
         {
-            //TODO Make detection of reconnection more performant
 
             if (GPMReconnectThread.ThreadState == System.Threading.ThreadState.Stopped || GPMReconnectThread.ThreadState == System.Threading.ThreadState.Unstarted)
             {

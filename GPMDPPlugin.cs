@@ -45,20 +45,21 @@ namespace GPMDPPlugin
                 ThemeColor = "222, 79, 44";
 
                 Queue = new List<string[]>();
-
-                //This loop populates queue with 21 peices of information
-                //This will be interpreted 0-9 as last 10 songs, 10 is current, 11-20 is next 10
-                for (int i = 0; i <= 20; i++)
-                {
-                    string[] info = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
-                    //TODO evaluate if I want to have different default values
-                    //I dont think I will as the user substituting "" with N/A would make more sense in most cases
-                    foreach (MeasureInfoType currInfo in Enum.GetValues(typeof(MeasureInfoType)))
-                    {
-                        info[i] = "";
-                    }
-                    Queue.Add(info);
-                }
+               
+               //This loop populates queue with 21 peices of information
+               //This will be interpreted 0-9 as last 10 songs, 10 is current, 11-20 is next 10
+               //TODO Make how many songs are kept in each direction dynamic
+               for (int i = 0; i <= 20; i++)
+               {
+                   string[] info = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
+                   //TODO evaluate if I want to have different default values
+                   //I dont think I will as the user substituting "" with N/A would make more sense in most cases
+                   for(int j = 0; j < info.Length; j++)
+                   {
+                       info[j] = "";
+                   }
+                   Queue.Add(info);
+               }
             }
             public string Artist { get; set; }
             public string Album { get; set; }
@@ -395,7 +396,7 @@ namespace GPMDPPlugin
 
                         //JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
                         //JArray arrayData = new JArray(data);
-                        ////API.Log(API.LogType.Notice, "data:" + data);
+                        //API.Log(API.LogType.Notice, "data:" + data);
                         //foreach (JToken token in arrayData)
                         //{
                         //    JToken currentProperty = token.First.Last;
@@ -717,7 +718,49 @@ namespace GPMDPPlugin
         }
         private static void updateRelativeQueue()
         {
+            //Get these to begin with to prevent them changing part way through and getting no result
+            string titleToLookFor = websocketInfoGPMDP.Title;
+            string artistToLookFor = websocketInfoGPMDP.Artist;
+            string albumToLookFor = websocketInfoGPMDP.Album;
+            int currentIndex = 0;
 
+            //TODO add escape to this search if a new thread is going to be spawned, do same with image downloader
+            //TODO optimize this search to start at last known index and stop once a match has been found
+            foreach (string[] trackInfo in queueInfoList)
+            {
+                if (trackInfo[(int)QueueInfoType.Title].CompareTo(titleToLookFor) == 0)
+                {
+                    if (trackInfo[(int)QueueInfoType.Album].CompareTo(albumToLookFor) == 0)
+                    {
+                        if (trackInfo[(int)QueueInfoType.Artist].CompareTo(artistToLookFor) == 0)
+                        {
+                            //Index starts a 1 not 0 so subtract 1 from it
+                            currentIndex = Convert.ToInt32(trackInfo[(int)QueueInfoType.Index]) - 1;
+                        }
+                    }
+                }
+            }
+            if (currentIndex - 10 >= 0)
+            {
+                websocketInfoGPMDP.Queue = queueInfoList.GetRange(currentIndex - 10, 21);
+            }
+            else
+            {
+                websocketInfoGPMDP.Queue.Clear();
+
+                for(int i = currentIndex; i < 10; i++)
+                {
+                    string[] info = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
+                    //TODO evaluate if I want to have different default values
+                    //I dont think I will as the user substituting "" with N/A would make more sense in most cases
+                    for (int j = 0; j < info.Length; j++)
+                    {
+                        info[j] = "";
+                    }
+                    websocketInfoGPMDP.Queue.Add(info);
+                }
+                websocketInfoGPMDP.Queue.AddRange(queueInfoList.GetRange(currentIndex, 10));
+            }
         }
         //To be used for reading and writing values from the rainmeter settings file
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]

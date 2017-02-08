@@ -107,7 +107,8 @@ namespace GPMDPPlugin
             Volume,
             Lyrics,
             ThemeType,
-            ThemeColor
+            ThemeColor,
+            Queue
         }
         enum QueueInfoType
         {
@@ -124,6 +125,10 @@ namespace GPMDPPlugin
         //Info and player type of the measure
         private MeasureInfoType InfoType;
 
+        //Info for queue measures, these are specific to a measure and 
+        private int myQueueLocationToRead = 0;
+        private QueueInfoType myQueueInfoType = QueueInfoType.Title;
+
         //These variables, enums, and functions are all related to support for GPMDP
         public static WebSocket ws;
         private const String supportedAPIVersion = "1.1.0";
@@ -131,7 +136,8 @@ namespace GPMDPPlugin
         private static musicInfo websocketInfoGPMDP = new musicInfo();
         private static string defaultCoverLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
         private static string coverOutputLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
-        
+
+
         private static List<string[]> queueInfoList = new List<string[]>();
         private static int lastKnownQueueLocation = 0;
         private static Thread queueUpdateThread;
@@ -1049,6 +1055,22 @@ namespace GPMDPPlugin
                     InfoType = MeasureInfoType.ThemeColor;
                     break;
 
+                case "queue":
+                    InfoType = MeasureInfoType.Queue;
+
+                    myQueueLocationToRead = Convert.ToInt16(api.ReadString("QueueLocation", "0"));
+
+                    string queueType = api.ReadString("QueueType", "").ToLower();
+
+                    foreach(QueueInfoType currType in Enum.GetValues(typeof(QueueInfoType)))
+                    {
+                        if(queueType.CompareTo(currType.ToString().ToLower()) == 0)
+                        {
+                            myQueueInfoType = currType;
+                        }
+                    }
+                    break;
+
                 default:
                     API.Log(API.LogType.Error, "GPMDPPlugin.dll: InfoType=" + infoType + " not valid, assuming title");
                     InfoType = MeasureInfoType.Title;
@@ -1104,7 +1126,7 @@ namespace GPMDPPlugin
             }
             else if (a.Contains("setrating"))
             {
-                int rating = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
+                int rating = Convert.ToInt16(args.Substring(args.LastIndexOf(" ")));
                 GPMDPSetRating(rating);
             }
             else if (a.Contains("setposition"))
@@ -1192,6 +1214,9 @@ namespace GPMDPPlugin
                     return websocketInfoGPMDP.Lyrics;
                 case MeasureInfoType.ThemeColor:
                     return websocketInfoGPMDP.ThemeColor;
+                case MeasureInfoType.Queue:
+                    //Add ten to it so locations 0-9 map to -10 through -1, 0 maps to 10, and 1-10 map to 11-21
+                    return websocketInfoGPMDP.Queue[myQueueLocationToRead+10][(int)myQueueInfoType];
 
 
                 //These values are integers returned in update

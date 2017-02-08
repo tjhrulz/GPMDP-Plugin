@@ -304,6 +304,9 @@ namespace GPMDPPlugin
                                         }
                                     }
                                 }
+                                //TODO Better handle both this and album art downloader being run again before the last one has finished
+                                Thread qt = new Thread(() => updateRelativeQueue());
+                                qt.Start();
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.playstate.ToString()) == 0 && acceptedVersion == true)
                             {
@@ -759,7 +762,12 @@ namespace GPMDPPlugin
                     }
                     websocketInfoGPMDP.Queue.Add(info);
                 }
-                websocketInfoGPMDP.Queue.AddRange(queueInfoList.GetRange(currentIndex, 10));
+                websocketInfoGPMDP.Queue.AddRange(queueInfoList.GetRange(currentIndex, 11));
+            }
+
+            foreach(string[] info in websocketInfoGPMDP.Queue)
+            {
+                API.Log(API.LogType.Notice, info[(int)QueueInfoType.Title]);
             }
         }
         //To be used for reading and writing values from the rainmeter settings file

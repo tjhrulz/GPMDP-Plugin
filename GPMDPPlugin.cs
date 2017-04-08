@@ -727,7 +727,12 @@ namespace GPMDPPlugin
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Duration.ToString().ToLower()) == 0)
                     {
-                        songInfo[(int)QueueInfoType.Duration] = trackInfo.First.ToString();
+                        int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+
+                        int trackMinutes = trackSeconds / 60;
+                        trackSeconds = trackSeconds % 60;
+
+                        songInfo[(int)QueueInfoType.Duration] = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.PlayCount.ToString().ToLower()) == 0)
                     {
@@ -741,6 +746,10 @@ namespace GPMDPPlugin
                     {
                         songInfo[(int)QueueInfoType.ID] = trackInfo.First.ToString();
                     }
+                    //else
+                    //{
+                    //    API.Log(API.LogType.Notice, "Unsupported queueu info:" + trackInfo.Name.ToString());
+                    //}
                 }
                 queueInfoList.Add(songInfo);
             }
@@ -928,10 +937,10 @@ namespace GPMDPPlugin
                 {
                     API.Log(API.LogType.Error, "Keeping old queue as no match was found");
                 }
-                foreach (string[] info in websocketInfoGPMDP.Queue)
-                {
-                    API.Log(API.LogType.Notice, info[(int)QueueInfoType.Title]);
-                }
+                //foreach (string[] info in websocketInfoGPMDP.Queue)
+                //{
+                //    API.Log(API.LogType.Notice, info[(int)QueueInfoType.Title]);
+                //}
             }
         }
         //To be used for reading and writing values from the rainmeter settings file

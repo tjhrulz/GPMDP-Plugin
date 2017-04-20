@@ -2,8 +2,8 @@
 A plugin that makes available the music info [Google Play Music Desktop Player](https://www.googleplaymusicdesktopplayer.com/) to rainmeter skins.  
 Has full media control support as well (Play/Pause, Next, Previous, Shuffle, Repeat, etc.)  
 Included in this repo is a example skin that shows how to use every measure and bang.  
-Current state: Standard media info feature set and controls. Rating and Lyrics support just added  
-Future: Next queued songs info
+Current state: Standard media info feature set and controls. Rating and Lyrics support added, Queue support just added  
+Future: Dynamically sized queue so you can go more than 10 into the past or future as well as performance improvements when no skin is using the queue
 
 **Note:** Please see included installer on how to grant the plugin access to media controls. If no info is shown please see helper for how to setup GPMDP, in the future the helper will be replaced with a link to the wiki with an explanation on how to set it up.
 
@@ -19,6 +19,7 @@ Future: Next queued songs info
 **Rating** - Integer of the rating of the song, -1 is thumbs down, 0 is no rating, 1 is thumbs up  
 **Volume** - Integer between 0-100 of what the current volume is oin GPMDP
 **Lyrics** - String of the lyrics of the song. **Note** While downloading the lyrics or if there are none know this string will be "" Thus this changes twice on any song with lyrics and only once on a song without lyrics  
+**Queue** - List of the previous 10 and next 10 songs as well as the current song. Set attribute QueueLocation (Any number -10 through 10) to pick the song you want and attribute QueueType (Title, Artist, Album, AlbumArt, Duration, PlayCount, or Index) to pick the type of info.  
 **themetype** - Integer of the type of theme GPMDP is using, 0 is white, 1 is black  
 **themecolor** - String of RGB value without transparency of the theme color in GPMDP **Note** custom colors are not supported  
 **State** - Integer of the play state of GPMDP, 0 is stopped, 1 is playing, 2 is paused  

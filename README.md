@@ -10,16 +10,20 @@ Future: Dynamically sized queue so you can go more than 10 into the past or futu
 ## Full list of supported measure and bang types  
 ### MEASURE TYPES
 **Title, Artist, Album** - String of current playing songs info, blank if no info    
-**Cover** - String of the path where the current album art is downloaded to, set attribute CoverPath to define where to download it, set attribute DefaultPath to set what image to show while waiting for the album art to download   
+**Cover** - String that points to current album art, while downloading or if no album art points to the path of the default. Atributes:  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CoverPath - a system path to where to store the album  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DefaultPath - a system path to what image to use when downloading the album art   
 **CoverWebAddress** - String of URL location of current album art, useful for doing an onChangeAction as cover will update twice when the song changes this will only update once  
 **Position, Duration** - String of how far into the song or how long the song is, formated MM:SS  
-**Progress** - Double of how far into the song you are as a percentage. To clarify that number is formated ##.##### and has a predefined max of 100.00.
+**Progress** - Double of how far into the song you are as a percentage. To clarify that number is formated ##.##### and has a predefined max of 100.00.  
 **Repeat** - Integer of if GPMDP is set to repeat, 0 is no, 1 is repeat one song, 2 is repeat all  
 **Shuffle** - Integer of if GPMDP is set to shuffle, 0 is no, 1 is yes  
 **Rating** - Integer of the rating of the song, -1 is thumbs down, 0 is no rating, 1 is thumbs up  
 **Volume** - Integer between 0-100 of what the current volume is oin GPMDP
 **Lyrics** - String of the lyrics of the song. **Note** While downloading the lyrics or if there are none know this string will be "" Thus this changes twice on any song with lyrics and only once on a song without lyrics  
-**Queue** - List of the previous 10 and next 10 songs as well as the current song. Set attribute QueueLocation (Any number -10 through 10) to pick the song you want and attribute QueueType (Title, Artist, Album, AlbumArt, Duration, PlayCount, or Index) to pick the type of info.  
+**Queue** - String of an info type from a location in the relative queue Attributes:  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;QueueLocation - an integer between -10 and 10 that is the song relative to the current song you want   
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;QueueType - A string that is either Title, Artist, Album, AlbumArt, Duration, PlayCount, or Index and is what info you want back from the queue   
 **themetype** - Integer of the type of theme GPMDP is using, 0 is white, 1 is black  
 **themecolor** - String of RGB value without transparency of the theme color in GPMDP **Note** custom colors are not supported  
 **State** - Integer of the play state of GPMDP, 0 is stopped, 1 is playing, 2 is paused  

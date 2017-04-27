@@ -617,9 +617,11 @@ namespace GPMDPPlugin
 
                             if(!foundMatch)
                             {
+                                String newAuthcode = System.Guid.NewGuid().ToString();
+
                                 //TODO make a RNG for this instead of hard code.
-                                setting.First.Last.AddAfterSelf("b7549d27-7a7f-444c-8306-003f73b90485");
-                                authcode = "b7549d27-7a7f-444c-8306-003f73b90485";
+                                setting.First.Last.AddAfterSelf(newAuthcode);
+                                authcode = newAuthcode;
 
                                 fileNeedsAdjusted = true;
                             }
@@ -637,7 +639,7 @@ namespace GPMDPPlugin
                     }
                 }
             }
-            catch (Exception e)
+            catch
             {
                 API.Log(API.LogType.Error, "Unable to locate GPMDP settings file, you will need to use an authenication skin to get playback controls and custom theme colors will be unsupported");
             }
@@ -652,7 +654,7 @@ namespace GPMDPPlugin
                 //TODO make it so it uses tabs instead of spaces like the normal file does
                 File.WriteAllText(settingsPath, settingsFile.Root.ToString());
             }
-            catch (Exception e)
+            catch
             {
                 API.Log(API.LogType.Error, "Unable to write to GPMDP settings file, this will cause issues with automatic verification. Try closing GPMDP and refreshing your skin");
             }

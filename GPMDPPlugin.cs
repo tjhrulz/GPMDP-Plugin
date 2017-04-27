@@ -617,11 +617,18 @@ namespace GPMDPPlugin
 
                             if(!foundMatch)
                             {
-                                String newAuthcode = System.Guid.NewGuid().ToString();
+                                //If no authcode found matching the one from the rainmeter settings kill GPMDP and make a new one
 
-                                //TODO make a RNG for this instead of hard code.
+                                foreach (var process in Process.GetProcessesByName("Google Play Music Desktop Player"))
+                                {
+                                    process.Kill();
+                                }
+
+                                String newAuthcode = System.Guid.NewGuid().ToString();
                                 setting.First.Last.AddAfterSelf(newAuthcode);
                                 authcode = newAuthcode;
+
+                                WritePrivateProfileString("GPMDPPlugin", "AuthCode", authcode, rainmeterFileSettingsLocation);
 
                                 fileNeedsAdjusted = true;
                             }
@@ -651,8 +658,8 @@ namespace GPMDPPlugin
             {
                 string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Google Play Music Desktop Player\\json_store\\.settings.json");
 
-                //TODO make it so it uses tabs instead of spaces like the normal file does
-                File.WriteAllText(settingsPath, settingsFile.Root.ToString());
+                //TODO make it so it uses 4 spaces instead of 2 spaces like the normal file does
+                File.WriteAllText(settingsPath, settingsFile.Root.ToString().Replace("  ", "    "));
             }
             catch
             {

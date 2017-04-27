@@ -619,11 +619,6 @@ namespace GPMDPPlugin
                             {
                                 //If no authcode found matching the one from the rainmeter settings kill GPMDP and make a new one
 
-                                foreach (var process in Process.GetProcessesByName("Google Play Music Desktop Player"))
-                                {
-                                    process.Kill();
-                                }
-
                                 String newAuthcode = System.Guid.NewGuid().ToString();
                                 setting.First.Last.AddAfterSelf(newAuthcode);
                                 authcode = newAuthcode;
@@ -656,14 +651,28 @@ namespace GPMDPPlugin
         {
             try
             {
+                foreach (var process in Process.GetProcessesByName("Google Play Music Desktop Player"))
+                {
+                    process.Kill();
+                }
+
                 string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Google Play Music Desktop Player\\json_store\\.settings.json");
 
-                //TODO make it so it uses 4 spaces instead of 2 spaces like the normal file does
+                //Replace is to make it so it uses 4 spaces instead of 2 spaces like the normal file does
                 File.WriteAllText(settingsPath, settingsFile.Root.ToString().Replace("  ", "    "));
             }
             catch
             {
                 API.Log(API.LogType.Error, "Unable to write to GPMDP settings file, this will cause issues with automatic verification. Try closing GPMDP and refreshing your skin");
+            }
+
+            try
+            {
+                Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
+            }
+            catch (Exception e)
+            {
+                API.Log(API.LogType.Warning, "Unable to relaunch GPMDP after first run settings change, you will need to relaunch it manually");
             }
         }
         //These are functions that handle the sending of various GPMDP websocket commands
@@ -1241,57 +1250,84 @@ namespace GPMDPPlugin
 
         internal void ExecuteBang(string args)
         {
-            string a = args.ToLowerInvariant();
-            if (a.Equals("playpause"))
+            string bang = args.ToLowerInvariant();
+            if (bang.Equals("playpause"))
             {
                 GPMDPPlayPause();
             }
-            else if (a.Equals("play"))
+            else if (bang.Equals("play"))
             {
             }
-            else if (a.Equals("pause"))
+            else if (bang.Equals("pause"))
             {
             }
-            else if (a.Equals("next"))
+            else if (bang.Equals("next"))
             {
                 GPMDPForward();
             }
-            else if (a.Equals("previous"))
+            else if (bang.Equals("previous"))
             {
                 GPMDPPrevious();
             }
-            else if (a.Equals("repeat"))
+            else if (bang.Equals("repeat"))
             {
                 GPMDPToggleRepeat();
             }
-            else if (a.Equals("shuffle"))
+            else if (bang.Equals("shuffle"))
             {
                 GPMDPToggleShuffle();
             }
-            else if (a.Equals("togglethumbsup"))
+            else if (bang.Equals("togglethumbsup"))
             {
                 GPMDPToggleThumbsUp();
             }
-            else if (a.Equals("togglethumbsdown"))
+            else if (bang.Equals("togglethumbsdown"))
             {
                 GPMDPToggleThumbsDown();
             }
-            else if (a.Contains("setrating"))
+            else if (bang.Contains("setrating"))
             {
                 int rating = Convert.ToInt16(args.Substring(args.LastIndexOf(" ")));
                 GPMDPSetRating(rating);
             }
-            else if (a.Contains("setposition"))
+            else if (bang.Contains("setposition"))
             {
                 String percent = args.Substring(args.LastIndexOf(" "));
                 GPMDPSetPosition(percent);
             }
-            else if (a.Contains("setvolume"))
+            else if (bang.Contains("setvolume"))
             {
                 String volume = args.Substring(args.LastIndexOf(" "));
                 GPMDPSetVolume(volume);
             }
-            else if (a.Contains("key"))
+            else if (bang.Equals("openplayer"))
+            {
+                Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
+            }
+            else if (bang.Equals("closeplayer"))
+            {
+                foreach (var process in Process.GetProcessesByName("Google Play Music Desktop Player"))
+                {
+                    process.Kill();
+                }
+            }
+            else if (bang.Equals("toggleplayer"))
+            {
+                Process[] GPMDPProcesses = Process.GetProcessesByName("Google Play Music Desktop Player");
+
+                if(GPMDPProcesses.Length > 0)
+                {
+                    foreach (var process in GPMDPProcesses)
+                    {
+                        process.Kill();
+                    }
+                }
+                else
+                {
+                    Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
+                }
+            }
+            else if (bang.Contains("key"))
             {
                 //Get the last 4 chars of the keycode, this should ensure that we always get it even when bang is a little off
                 getGPMDPAuthCode(args.Substring(args.Length - 4, 4));

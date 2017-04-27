@@ -469,7 +469,21 @@ namespace GPMDPPlugin
                             else if (currentProperty.ToString().ToLower().Contains("themecolor") && acceptedVersion == true)
                             {
                                 String rgbString = currentValue.ToString();
-                                websocketInfoGPMDP.ThemeColor = rgbString.Substring(rgbString.IndexOf("(") + 1, rgbString.IndexOf(")") - rgbString.IndexOf("(") - 1);
+
+                                if (rgbString.ToLower().Contains("rgb"))
+                                {
+                                    websocketInfoGPMDP.ThemeColor = rgbString.Substring(rgbString.IndexOf("(") + 1, rgbString.IndexOf(")") - rgbString.IndexOf("(") - 1);
+                                }
+                                else
+                                {
+                                    //Cutoff the # that is at the beginning
+                                    rgbString = rgbString.Substring(1);
+                                    string r = Convert.ToInt32(rgbString.Substring(0, 2), 16).ToString();
+                                    string g = Convert.ToInt32(rgbString.Substring(2, 2), 16).ToString();
+                                    string b = Convert.ToInt32(rgbString.Substring(4, 2), 16).ToString();
+
+                                    websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
+                                }
                             }
                         }
                     }
@@ -534,17 +548,23 @@ namespace GPMDPPlugin
             }
         }
 
+        //This is to prevent multiple writes from happening to the settings file
+        private static Boolean fileIsAdjusted = false;
+
         private static void getGPMDPSettings()
         {
             try
             {
                 string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Google Play Music Desktop Player\\json_store\\.settings.json");
-                Boolean fileIsAdjusted = false;
 
                 using (StreamReader file = File.OpenText(settingsPath))
                 using (JsonTextReader reader = new JsonTextReader(file))
                 {
                     JObject settingsFile = (JObject)JToken.ReadFrom(reader);
+                    reader.Close();
+                    file.Close();
+
+                    Boolean fileNeedsAdjusted = false;
 
                     foreach (JToken setting in settingsFile.Children())
                     {
@@ -552,10 +572,9 @@ namespace GPMDPPlugin
                         {
                             string settingsColor = setting.First.ToString();
 
-                            if (settingsColor.Contains("rgb"))
+                            if (settingsColor.ToLower().Contains("rgb"))
                             {
-                                //Writing settingsColor.length -5 is easier, the magic number of -5 gets rid of the ) while accounting for the rgb( that the substring will cutoff
-                                websocketInfoGPMDP.ThemeColor = settingsColor.Substring(settingsColor.IndexOf("(") + 1, settingsColor.Length - 5);
+                                websocketInfoGPMDP.ThemeColor = settingsColor.Substring(settingsColor.IndexOf("(") + 1, settingsColor.IndexOf(")") - settingsColor.IndexOf("(") - 1);
                             }
                             else
                             {
@@ -568,35 +587,76 @@ namespace GPMDPPlugin
                                 websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
                             }
                         }
-                        else if (setting.Path.ToString().CompareTo("enableJSON_API") == 0)
+                        else if (setting.Path.ToString().CompareTo("enableJSON_API") == 0 && !fileIsAdjusted)
                         {
-
+                            if (setting.First.ToString().ToLower().Contains("false"))
+                            {
+                                setting.First.Replace("true");
+                                fileNeedsAdjusted = true;
+                            }
                         }
-                        else if (setting.Path.ToString().CompareTo("playbackAPI") == 0)
+                        else if (setting.Path.ToString().CompareTo("playbackAPI") == 0 && !fileIsAdjusted)
                         {
-
+                            if (setting.First.ToString().ToLower().Contains("false"))
+                            {
+                                setting.First.Replace("true");
+                                fileNeedsAdjusted = true;
+                            }
                         }
-                        else if (setting.Path.ToString().CompareTo("authorized_devices") == 0)
+                        else if (setting.Path.ToString().CompareTo("authorized_devices") == 0 && !fileIsAdjusted)
                         {
+                            bool foundMatch = false;
+                            foreach (JToken currAuthcode in setting.Children().Children())
+                            {
+                                if (currAuthcode.ToString().CompareTo(authcode) == 0)
+                                {
+                                    foundMatch = true;
+                                }
 
+                            }
+
+                            if(!foundMatch)
+                            {
+                                //TODO make a RNG for this instead of hard code.
+                                setting.First.Last.AddAfterSelf("b7549d27-7a7f-444c-8306-003f73b90485");
+                                authcode = "b7549d27-7a7f-444c-8306-003f73b90485";
+
+                                fileNeedsAdjusted = true;
+                            }
                         }
+                    }
 
-
-                        API.Log(API.LogType.Notice, setting.ToString());
+                    if(fileNeedsAdjusted && !fileIsAdjusted)
+                    {
+                        fileIsAdjusted = true;
+                        adjustGPMDPSettings(settingsFile);
+                    }
+                    else
+                    {
+                        fileIsAdjusted = true;
                     }
                 }
             }
-            catch
+            catch (Exception e)
             {
                 API.Log(API.LogType.Error, "Unable to locate GPMDP settings file, you will need to use an authenication skin to get playback controls and custom theme colors will be unsupported");
             }
         }
 
-        private static void adjustGPMDPSettings()
+        private static void adjustGPMDPSettings(JObject settingsFile)
         {
+            try
+            {
+                string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Google Play Music Desktop Player\\json_store\\.settings.json");
 
+                //TODO make it so it uses tabs instead of spaces like the normal file does
+                File.WriteAllText(settingsPath, settingsFile.Root.ToString());
+            }
+            catch (Exception e)
+            {
+                API.Log(API.LogType.Error, "Unable to write to GPMDP settings file, this will cause issues with automatic verification. Try closing GPMDP and refreshing your skin");
+            }
         }
-
         //These are functions that handle the sending of various GPMDP websocket commands
         //In theory if these were called before the websocket has been setup the could error but that would be impossible in rainmeter so adding the overhead for checks is unneeded.
         private static void GPMDPPlayPause()
@@ -1017,8 +1077,17 @@ namespace GPMDPPlugin
             string value, string filePath);
 
         //Rainmeter functions
-        internal Measure()
+        internal Measure(Rainmeter.API api)
         {
+            //If not setup get the rainmeter settings file location and load the authcode
+            if (rainmeterFileSettingsLocation.Length == 0)
+            {
+                rainmeterFileSettingsLocation = api.GetSettingsFile();
+                char[] authchar = new char[36];
+                GetPrivateProfileString("GPMDPPlugin", "AuthCode", "", authchar, 37, rainmeterFileSettingsLocation);
+                authcode = new String(authchar);
+            }
+
             getGPMDPSettings();
 
             if (GPMInitThread.ThreadState == System.Threading.ThreadState.Unstarted)
@@ -1323,7 +1392,7 @@ namespace GPMDPPlugin
         [DllExport]
         public static void Initialize(ref IntPtr data, IntPtr rm)
         {
-            data = GCHandle.ToIntPtr(GCHandle.Alloc(new Measure()));
+            data = GCHandle.ToIntPtr(GCHandle.Alloc(new Measure(new Rainmeter.API(rm))));
         }
 
         [DllExport]

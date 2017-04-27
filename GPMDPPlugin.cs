@@ -534,6 +534,69 @@ namespace GPMDPPlugin
             }
         }
 
+        private static void getGPMDPSettings()
+        {
+            try
+            {
+                string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Google Play Music Desktop Player\\json_store\\.settings.json");
+                Boolean fileIsAdjusted = false;
+
+                using (StreamReader file = File.OpenText(settingsPath))
+                using (JsonTextReader reader = new JsonTextReader(file))
+                {
+                    JObject settingsFile = (JObject)JToken.ReadFrom(reader);
+
+                    foreach (JToken setting in settingsFile.Children())
+                    {
+                        if (setting.Path.ToString().CompareTo("themeColor") == 0)
+                        {
+                            string settingsColor = setting.First.ToString();
+
+                            if (settingsColor.Contains("rgb"))
+                            {
+                                //Writing settingsColor.length -5 is easier, the magic number of -5 gets rid of the ) while accounting for the rgb( that the substring will cutoff
+                                websocketInfoGPMDP.ThemeColor = settingsColor.Substring(settingsColor.IndexOf("(") + 1, settingsColor.Length - 5);
+                            }
+                            else
+                            {
+                                //Cutoff the # that is at the beginning
+                                settingsColor = settingsColor.Substring(1);
+                                string r = Convert.ToInt32(settingsColor.Substring(0, 2), 16).ToString();
+                                string g = Convert.ToInt32(settingsColor.Substring(2, 2), 16).ToString();
+                                string b = Convert.ToInt32(settingsColor.Substring(4, 2), 16).ToString();
+
+                                websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
+                            }
+                        }
+                        else if (setting.Path.ToString().CompareTo("enableJSON_API") == 0)
+                        {
+
+                        }
+                        else if (setting.Path.ToString().CompareTo("playbackAPI") == 0)
+                        {
+
+                        }
+                        else if (setting.Path.ToString().CompareTo("authorized_devices") == 0)
+                        {
+
+                        }
+
+
+                        API.Log(API.LogType.Notice, setting.ToString());
+                    }
+                }
+            }
+            catch
+            {
+                API.Log(API.LogType.Error, "Unable to locate GPMDP settings file, you will need to use an authenication skin to get playback controls and custom theme colors will be unsupported");
+            }
+        }
+
+        private static void adjustGPMDPSettings()
+        {
+
+        }
+
         //These are functions that handle the sending of various GPMDP websocket commands
         //In theory if these were called before the websocket has been setup the could error but that would be impossible in rainmeter so adding the overhead for checks is unneeded.
         private static void GPMDPPlayPause()
@@ -956,6 +1019,8 @@ namespace GPMDPPlugin
         //Rainmeter functions
         internal Measure()
         {
+            getGPMDPSettings();
+
             if (GPMInitThread.ThreadState == System.Threading.ThreadState.Unstarted)
             {
                 GPMInitThread.Start();

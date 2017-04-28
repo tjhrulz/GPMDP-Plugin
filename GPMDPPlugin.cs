@@ -255,29 +255,45 @@ namespace GPMDPPlugin
                                 {
                                     if (trackInfo.Name.ToString().ToLower().CompareTo("current") == 0)
                                     {
-                                        websocketInfoGPMDP.PositionInms = Convert.ToInt32(trackInfo.First);
-                                        if (websocketInfoGPMDP.DurationInms != 0)
+                                        try
                                         {
-                                            websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
-                                        }
-                                        int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-                                        int trackMinutes = trackSeconds / 60;
-                                        trackSeconds = trackSeconds % 60;
+                                            websocketInfoGPMDP.PositionInms = Convert.ToInt32(trackInfo.First);
+                                            if (websocketInfoGPMDP.DurationInms != 0)
+                                            {
+                                                websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
+                                            }
+                                            int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                                            int trackMinutes = trackSeconds / 60;
+                                            trackSeconds = trackSeconds % 60;
 
-                                        websocketInfoGPMDP.Position = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                            websocketInfoGPMDP.Position = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            API.Log(API.LogType.Error, "Unable to convert the position from GPMDP, report this issue on the GPMDP plugin github page");
+                                            API.Log(API.LogType.Debug, e.ToString());
+                                        }
                                     }
                                     else if (trackInfo.Name.ToString().ToLower().CompareTo("total") == 0)
                                     {
-                                        websocketInfoGPMDP.DurationInms = Convert.ToInt32(trackInfo.First);
-                                        if (websocketInfoGPMDP.DurationInms != 0)
+                                        try
                                         {
-                                            websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
-                                        }
-                                        int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-                                        int trackMinutes = trackSeconds / 60;
-                                        trackSeconds = trackSeconds % 60;
+                                            websocketInfoGPMDP.DurationInms = Convert.ToInt32(trackInfo.First);
+                                            if (websocketInfoGPMDP.DurationInms != 0)
+                                            {
+                                                websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
+                                            }
+                                            int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                                            int trackMinutes = trackSeconds / 60;
+                                            trackSeconds = trackSeconds % 60;
 
-                                        websocketInfoGPMDP.Duration = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                            websocketInfoGPMDP.Duration = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            API.Log(API.LogType.Error, "Unable to convert the duration from GPMDP, report this issue on the GPMDP plugin github page");
+                                            API.Log(API.LogType.Debug, e.ToString());
+                                        }
                                     }
                                 }
                             }
@@ -323,7 +339,15 @@ namespace GPMDPPlugin
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.playstate.ToString()) == 0 && acceptedVersion == true)
                             {
+                                try
+                                { 
                                 websocketInfoGPMDP.State = Convert.ToBoolean(currentValue) ? 1 : 2;
+                                }
+                                catch (Exception e)
+                                {
+                                    API.Log(API.LogType.Error, "Unable to convert the play state from GPMDP, report this issue on the GPMDP plugin github page");
+                                    API.Log(API.LogType.Debug, e.ToString());
+                                }
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.connect.ToString()) == 0)
                             {
@@ -372,24 +396,32 @@ namespace GPMDPPlugin
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.rating.ToString()) == 0 && acceptedVersion == true)
                             {
                                 int internalRating = 0;
-                                foreach (JProperty ratingInfo in currentValue)
+                                try
                                 {
-                                    if (ratingInfo.Name.ToString().ToLower().CompareTo("liked") == 0)
+                                    foreach (JProperty ratingInfo in currentValue)
                                     {
-                                        if (Convert.ToBoolean(ratingInfo.First))
+                                        if (ratingInfo.Name.ToString().ToLower().CompareTo("liked") == 0)
                                         {
-                                            internalRating = 1;
+                                            if (Convert.ToBoolean(ratingInfo.First))
+                                            {
+                                                internalRating = 1;
+                                            }
                                         }
-                                    }
-                                    else if (ratingInfo.Name.ToString().ToLower().CompareTo("disliked") == 0)
-                                    {
-                                        if (Convert.ToBoolean(ratingInfo.First))
+                                        else if (ratingInfo.Name.ToString().ToLower().CompareTo("disliked") == 0)
                                         {
-                                            internalRating = -1;
+                                            if (Convert.ToBoolean(ratingInfo.First))
+                                            {
+                                                internalRating = -1;
+                                            }
                                         }
                                     }
                                 }
-                                websocketInfoGPMDP.Rating = internalRating;
+                                catch (Exception e)
+                                {
+                                    API.Log(API.LogType.Error, "Unable to convert the song rating from GPMDP, report this issue on the GPMDP plugin github page");
+                                    API.Log(API.LogType.Debug, e.ToString());
+                                }
+                            websocketInfoGPMDP.Rating = internalRating;
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.lyrics.ToString()) == 0 && acceptedVersion == true)
                             {
@@ -397,7 +429,15 @@ namespace GPMDPPlugin
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.volume.ToString()) == 0 && acceptedVersion == true)
                             {
-                                websocketInfoGPMDP.Volume = Convert.ToInt16(currentValue);
+                                try
+                                { 
+                                    websocketInfoGPMDP.Volume = Convert.ToInt16(currentValue);
+                                }
+                                catch (Exception e)
+                                {
+                                    API.Log(API.LogType.Error, "Unable to convert the volume from GPMDP, report this issue on the GPMDP plugin github page");
+                                    API.Log(API.LogType.Debug, e.ToString());
+                                }
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.queue.ToString()) == 0 && acceptedVersion == true)
                             {
@@ -470,19 +510,27 @@ namespace GPMDPPlugin
                             {
                                 String rgbString = currentValue.ToString();
 
-                                if (rgbString.ToLower().Contains("rgb"))
+                                try
                                 {
-                                    websocketInfoGPMDP.ThemeColor = rgbString.Substring(rgbString.IndexOf("(") + 1, rgbString.IndexOf(")") - rgbString.IndexOf("(") - 1);
-                                }
-                                else
-                                {
-                                    //Cutoff the # that is at the beginning
-                                    rgbString = rgbString.Substring(1);
-                                    string r = Convert.ToInt32(rgbString.Substring(0, 2), 16).ToString();
-                                    string g = Convert.ToInt32(rgbString.Substring(2, 2), 16).ToString();
-                                    string b = Convert.ToInt32(rgbString.Substring(4, 2), 16).ToString();
+                                    if (rgbString.ToLower().Contains("rgb"))
+                                    {
+                                        websocketInfoGPMDP.ThemeColor = rgbString.Substring(rgbString.IndexOf("(") + 1, rgbString.IndexOf(")") - rgbString.IndexOf("(") - 1);
+                                    }
+                                    else
+                                    {
+                                        //Cutoff the # that is at the beginning
+                                        rgbString = rgbString.Substring(1);
+                                        string r = Convert.ToInt32(rgbString.Substring(0, 2), 16).ToString();
+                                        string g = Convert.ToInt32(rgbString.Substring(2, 2), 16).ToString();
+                                        string b = Convert.ToInt32(rgbString.Substring(4, 2), 16).ToString();
 
-                                    websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
+                                        websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    API.Log(API.LogType.Error, "Unable to convert the theme color from GPMDP, report this issue on the GPMDP plugin github page");
+                                    API.Log(API.LogType.Debug, e.ToString());
                                 }
                             }
                         }
@@ -573,19 +621,27 @@ namespace GPMDPPlugin
                         {
                             string settingsColor = setting.First.ToString();
 
-                            if (settingsColor.ToLower().Contains("rgb"))
+                            try
                             {
-                                websocketInfoGPMDP.ThemeColor = settingsColor.Substring(settingsColor.IndexOf("(") + 1, settingsColor.IndexOf(")") - settingsColor.IndexOf("(") - 1);
-                            }
-                            else
-                            {
-                                //Cutoff the # that is at the beginning
-                                settingsColor = settingsColor.Substring(1);
-                                string r = Convert.ToInt32(settingsColor.Substring(0, 2), 16).ToString();
-                                string g = Convert.ToInt32(settingsColor.Substring(2, 2), 16).ToString();
-                                string b = Convert.ToInt32(settingsColor.Substring(4, 2), 16).ToString();
+                                if (settingsColor.ToLower().Contains("rgb"))
+                                {
+                                    websocketInfoGPMDP.ThemeColor = settingsColor.Substring(settingsColor.IndexOf("(") + 1, settingsColor.IndexOf(")") - settingsColor.IndexOf("(") - 1);
+                                }
+                                else
+                                {
+                                    //Cutoff the # that is at the beginning
+                                    settingsColor = settingsColor.Substring(1);
+                                    string r = Convert.ToInt32(settingsColor.Substring(0, 2), 16).ToString();
+                                    string g = Convert.ToInt32(settingsColor.Substring(2, 2), 16).ToString();
+                                    string b = Convert.ToInt32(settingsColor.Substring(4, 2), 16).ToString();
 
-                                websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
+                                    websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                API.Log(API.LogType.Error, "Unable to convert the theme color from GPMDP settings file, report this issue on the GPMDP plugin github page");
+                                API.Log(API.LogType.Debug, e.ToString());
                             }
                         }
                         else if (setting.Path.ToString().CompareTo("enableJSON_API") == 0 && !fileIsAdjusted)
@@ -745,10 +801,17 @@ namespace GPMDPPlugin
             int currentDuration = websocketInfoGPMDP.DurationInms;
             int timeInms = websocketInfoGPMDP.PositionInms;
 
-            if (percent.Contains("-")) { timeInms = timeInms - Convert.ToInt16(percent.Substring(percent.IndexOf("-") + 1)) * currentDuration / 100; ; }
-            else if (percent.Contains("+")) { timeInms = timeInms + Convert.ToInt16(percent.Substring(percent.IndexOf("+") + 1)) * currentDuration / 100; ; }
-            else { timeInms = Convert.ToInt32(percent) * currentDuration / 100; }
-             
+            try
+            {
+                if (percent.Contains("-")) { timeInms = (int)Math.Floor(timeInms - Convert.ToDouble(percent.Substring(percent.IndexOf("-") + 1)) * currentDuration / 100); ; }
+                else if (percent.Contains("+")) { timeInms = (int)Math.Floor(timeInms + Convert.ToDouble(percent.Substring(percent.IndexOf("+") + 1)) * currentDuration / 100); ; }
+                else { timeInms = (int)Math.Floor(Convert.ToDouble(percent) * currentDuration / 100); }
+            }
+            catch (Exception e)
+            {
+                API.Log(API.LogType.Error, "Unable to convert SetPosition bang value:" + percent + " to a valid position.");
+                API.Log(API.LogType.Debug, e.ToString());
+            }
 
             String repeatString = "{\n";
             repeatString += "\"namespace\": \"playback\",\n";
@@ -790,11 +853,20 @@ namespace GPMDPPlugin
         {
             int currentVolume = websocketInfoGPMDP.Volume;
             int volumeToSet = 0;
-            if (volume.Contains("-")) { volumeToSet = currentVolume - Convert.ToInt16(volume.Substring(volume.IndexOf("-") + 1)); }
-            else if (volume.Contains("+")) { volumeToSet = currentVolume + Convert.ToInt16(volume.Substring(volume.IndexOf("+") + 1)); }
-            else { volumeToSet = Convert.ToInt16(volume); }
 
-            if(volumeToSet > 100) { volumeToSet = 100;  }
+            try
+            {
+                if (volume.Contains("-")) { volumeToSet = currentVolume - Convert.ToInt16(volume.Substring(volume.IndexOf("-") + 1)); }
+                else if (volume.Contains("+")) { volumeToSet = currentVolume + Convert.ToInt16(volume.Substring(volume.IndexOf("+") + 1)); }
+                else { volumeToSet = Convert.ToInt16(volume); }
+            }
+            catch (Exception e)
+            {
+                API.Log(API.LogType.Error, "Unable to convert SetVolume bang value:" + volume + " to a valid volume.");
+                API.Log(API.LogType.Debug, e.ToString());
+            }
+
+            if (volumeToSet > 100) { volumeToSet = 100;  }
             else if(volumeToSet < 0) { volumeToSet = 0; }
 
             String repeatString = "{\n";
@@ -891,12 +963,20 @@ namespace GPMDPPlugin
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Duration.ToString().ToLower()) == 0)
                     {
-                        int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
+                        try
+                        {
+                            int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
 
-                        int trackMinutes = trackSeconds / 60;
-                        trackSeconds = trackSeconds % 60;
+                            int trackMinutes = trackSeconds / 60;
+                            trackSeconds = trackSeconds % 60;
 
-                        songInfo[(int)QueueInfoType.Duration] = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                            songInfo[(int)QueueInfoType.Duration] = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
+                        }
+                        catch (Exception e)
+                        {
+                            API.Log(API.LogType.Error, "Unable to convert the duration of a song in the queue from GPMDP, report this issue on the GPMDP plugin github page");
+                            API.Log(API.LogType.Debug, e.ToString());
+                        }
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.PlayCount.ToString().ToLower()) == 0)
                     {
@@ -954,7 +1034,15 @@ namespace GPMDPPlugin
                             if (queueInfoList[currentLocation][(int)QueueInfoType.Artist].CompareTo(artistToLookFor) == 0)
                             {
                                 //Index starts a 1 not 0 so subtract 1 from it
-                                currentIndex = Convert.ToInt32(queueInfoList[currentLocation][(int)QueueInfoType.Index]) - 1;
+                                try
+                                {
+                                    currentIndex = Convert.ToInt32(queueInfoList[currentLocation][(int)QueueInfoType.Index]) - 1;
+                                }
+                                catch (Exception e)
+                                {
+                                    API.Log(API.LogType.Error, "Unable to convert index of a song in the queue from GPMDP, report this issue on the GPMDP plugin github page");
+                                    API.Log(API.LogType.Debug, e.ToString());
+                                }
                                 foundMatch = true;
                             }
                         }
@@ -1242,7 +1330,18 @@ namespace GPMDPPlugin
                 case "queue":
                     InfoType = MeasureInfoType.Queue;
 
-                    myQueueLocationToRead = Convert.ToInt16(api.ReadString("QueueLocation", "0"));
+                    String queueLoc = api.ReadString("QueueLocation", "0");
+
+                    try
+                    { 
+                        myQueueLocationToRead = Convert.ToInt16(queueLoc);
+                    }
+                    catch (Exception e)
+                    {
+                        API.Log(API.LogType.Error, "Unable to convert the queue location "+ queueLoc +" to an integer, assuming 0");
+                        API.Log(API.LogType.Debug, e.ToString());
+                        myQueueLocationToRead = 0;
+                    }
 
                     string queueType = api.ReadString("QueueType", "").ToLower();
 
@@ -1310,8 +1409,16 @@ namespace GPMDPPlugin
             }
             else if (bang.Contains("setrating"))
             {
-                int rating = Convert.ToInt16(args.Substring(args.LastIndexOf(" ")));
-                GPMDPSetRating(rating);
+                try
+                {
+                    int rating = Convert.ToInt16(args.Substring(args.LastIndexOf(" ")));
+                    GPMDPSetRating(rating);
+                }
+                catch (Exception e)
+                {
+                    API.Log(API.LogType.Error, "Unable to convert the end of SetRating bang " + args.Substring(args.ToLower().LastIndexOf("setrating")) + " to a number");
+                    API.Log(API.LogType.Debug, e.ToString());
+                }
             }
             else if (bang.Contains("setposition"))
             {

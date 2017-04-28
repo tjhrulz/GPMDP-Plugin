@@ -37,9 +37,9 @@ Authentication should now be fully automatic so an authentication skin should no
 **Previous, PlayPause, Next** - Self explanitory, note previous set the song back to the start before going back to the previous song, PlayPause is a toggle and there is not currently a play or pause that just does that if it is requested in the future I could add this but GPMDP does not support it  
 **Repeat** - Toggles through repeat modes, order goes None -> Repeat All -> Repeat One ->  
 **Shuffle** - Toggles through shuffle modes, order goes None -> Shuffle All  
-**ToggleThumbsUp** and **ToggleThumbsDown** - Toggles the song being thumbed up or down, to set it to a specific state see SetRating  
-**OpenPlayer**, **ClosePlayer** and **TogglePlayer** - Opens, closes or toggles GPMDP. Useful since to correctly launch GPMDP requires pointing to the update.exe and adding an argument or changing it on every update.
+**ToggleThumbsUp** and **ToggleThumbsDown** - Toggles the song being thumbed up or down, to set it to a specific state see SetRating   
 **SetRating #** when # is an integer, -1 is thumbs down, 0 is no rating, 1 is thumbs up.  
+**OpenPlayer**, **ClosePlayer** and **TogglePlayer** - Opens, closes or toggles GPMDP. Useful since to correctly launch GPMDP requires pointing to the update.exe and adding an argument or changing it on every update.  
 **key ####** or **keycode ####** - **Deprecated, authentication is now automatic unless settings file can not be found** - Where #### is the 4 digit authentication code for GPMDP used to elavate connection status from 1 to 2, note this only has to be done once per machine and then it is saved in the rainmeter.data file. If connection status is 0 then GPMDP is not setup and doing this will do nothing.  
 
 ## List of current bugs:

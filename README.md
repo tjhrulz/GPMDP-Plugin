@@ -28,7 +28,7 @@ Future: Dynamically sized queue so you can go more than 10 into the past or futu
 **themecolor** - String of RGB value without transparency of the theme color in GPMDP  
 **State** - Integer of the play state of GPMDP, 0 is stopped, 1 is playing, 2 is paused  
 **ConnectionStatus** or **Status** - Integer status of the connection to GPMDP, -1 is plugin has not finished initializing and will become 0-2 in a moment, 0 is disconnected, 1 is connected but without remote control access, 2 is full connection  
-I recommend including a skin to allow the user to enter in the 4 digit pin if you redistribute this plugin. In the future I will have a guide in the wiki walking through how to setup GPMDP, for the future just see the included installer and helper skin for how to inform your users.
+Authentication should now be fully automatic so an authentication skin should not be necessary, but in the event it stays 1 the automatic authentication has failed.
 
 ### BANGS
 **SetPosition ##.####** - Where ##.#### is a Double between 0-100. Sets the what percent of the way through the song the song is.  
@@ -38,7 +38,7 @@ I recommend including a skin to allow the user to enter in the 4 digit pin if yo
 **Repeat** - Toggles through repeat modes, order goes None -> Repeat All -> Repeat One ->  
 **Shuffle** - Toggles through shuffle modes, order goes None -> Shuffle All  
 **ToggleThumbsUp** and **ToggleThumbsDown** - Toggles the song being thumbed up or down, to set it to a specific state see SetRating  
-**OpenPlayer**, **ClosePlayer** and **TogglePlayer** - Opens, closes or toggles the state of GPMDP  
+**OpenPlayer**, **ClosePlayer** and **TogglePlayer** - Opens, closes or toggles GPMDP. Useful since to correctly launch GPMDP requires pointing to the update.exe and adding an argument or changing it on every update.
 **SetRating #** when # is an integer, -1 is thumbs down, 0 is no rating, 1 is thumbs up.  
 **key ####** or **keycode ####** - **Deprecated, authentication is now automatic unless settings file can not be found** - Where #### is the 4 digit authentication code for GPMDP used to elavate connection status from 1 to 2, note this only has to be done once per machine and then it is saved in the rainmeter.data file. If connection status is 0 then GPMDP is not setup and doing this will do nothing.  
 

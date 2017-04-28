@@ -549,7 +549,7 @@ namespace GPMDPPlugin
         }
 
         //This is to prevent multiple writes from happening to the settings file
-        private static Boolean fileIsAdjusted = false;
+        private static bool fileIsAdjusted = false;
 
         private static void getGPMDPSettings()
         {
@@ -564,7 +564,8 @@ namespace GPMDPPlugin
                     reader.Close();
                     file.Close();
 
-                    Boolean fileNeedsAdjusted = false;
+                    bool fileNeedsAdjusted = false;
+                    bool fileContainsAuthcodeSection = false;
 
                     foreach (JToken setting in settingsFile.Children())
                     {
@@ -605,6 +606,7 @@ namespace GPMDPPlugin
                         }
                         else if (setting.Path.ToString().CompareTo("authorized_devices") == 0 && !fileIsAdjusted)
                         {
+                            fileContainsAuthcodeSection = true;
                             bool foundMatch = false;
                             foreach (JToken currAuthcode in setting.Children().Children())
                             {
@@ -615,19 +617,40 @@ namespace GPMDPPlugin
 
                             }
 
-                            if(!foundMatch)
+                            if (!foundMatch)
                             {
                                 //If no authcode found matching the one from the rainmeter settings kill GPMDP and make a new one
 
-                                String newAuthcode = System.Guid.NewGuid().ToString();
-                                setting.First.Last.AddAfterSelf(newAuthcode);
-                                authcode = newAuthcode;
+                                if (setting.First.Last != null)
+                                {
+                                    String newAuthcode = System.Guid.NewGuid().ToString();
+                                    authcode = newAuthcode;
 
-                                WritePrivateProfileString("GPMDPPlugin", "AuthCode", authcode, rainmeterFileSettingsLocation);
+                                    setting.First.Last.AddAfterSelf(authcode);
+                                    WritePrivateProfileString("GPMDPPlugin", "AuthCode", authcode, rainmeterFileSettingsLocation);
 
-                                fileNeedsAdjusted = true;
+                                    fileNeedsAdjusted = true;
+                                }
+                                else
+                                {
+                                    fileContainsAuthcodeSection = false;
+                                }
                             }
                         }
+                    }
+
+                    if(!fileContainsAuthcodeSection && !fileNeedsAdjusted && !fileIsAdjusted)
+                    {
+                        settingsFile.Remove("authorized_devices");
+
+                        String newAuthcode = System.Guid.NewGuid().ToString();
+                        authcode = newAuthcode;
+
+                        JArray authcodes = new JArray(authcode);
+                        settingsFile.Add("authorized_devices", authcodes);
+                        WritePrivateProfileString("GPMDPPlugin", "AuthCode", authcode, rainmeterFileSettingsLocation);
+
+                        fileNeedsAdjusted = true;
                     }
 
                     if(fileNeedsAdjusted && !fileIsAdjusted)
@@ -670,7 +693,7 @@ namespace GPMDPPlugin
             {
                 Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
             }
-            catch (Exception e)
+            catch
             {
                 API.Log(API.LogType.Warning, "Unable to relaunch GPMDP after first run settings change, you will need to relaunch it manually");
             }

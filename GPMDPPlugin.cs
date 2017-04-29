@@ -22,7 +22,7 @@ namespace GPMDPPlugin
                 State = 0;
                 Repeat = 0;
                 Shuffle = 0;
-                Volume = 0;
+                Volume = 100;
                 Status = -1;
                 DurationInms = 0;
                 PositionInms = 0;
@@ -803,9 +803,9 @@ namespace GPMDPPlugin
 
             try
             {
-                if (percent.Contains("-")) { timeInms = (int)Math.Floor(timeInms - Convert.ToDouble(percent.Substring(percent.IndexOf("-") + 1)) * currentDuration / 100); ; }
-                else if (percent.Contains("+")) { timeInms = (int)Math.Floor(timeInms + Convert.ToDouble(percent.Substring(percent.IndexOf("+") + 1)) * currentDuration / 100); ; }
-                else { timeInms = (int)Math.Floor(Convert.ToDouble(percent) * currentDuration / 100); }
+                if (percent.Contains("-")) { timeInms = (int)Math.Round(timeInms - Convert.ToDouble(percent.Substring(percent.IndexOf("-") + 1)) * currentDuration / 100); ; }
+                else if (percent.Contains("+")) { timeInms = (int)Math.Round(timeInms + Convert.ToDouble(percent.Substring(percent.IndexOf("+") + 1)) * currentDuration / 100); ; }
+                else { timeInms = (int)Math.Round(Convert.ToDouble(percent) * currentDuration / 100); }
             }
             catch (Exception e)
             {
@@ -852,7 +852,7 @@ namespace GPMDPPlugin
         private static void GPMDPSetVolume(String volume)
         {
             int currentVolume = websocketInfoGPMDP.Volume;
-            int volumeToSet = 0;
+            int volumeToSet = 100;
 
             try
             {
@@ -948,10 +948,18 @@ namespace GPMDPPlugin
                     if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Artist.ToString().ToLower()) == 0)
                     {
                         songInfo[(int)QueueInfoType.Artist] = trackInfo.First.ToString();
+                        if(songInfo[(int)QueueInfoType.Artist].Length == 0)
+                        {
+                            songInfo[(int)QueueInfoType.Artist] = "Unknown Artist";
+                        }
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Album.ToString().ToLower()) == 0)
                     {
                         songInfo[(int)QueueInfoType.Album] = trackInfo.First.ToString();
+                        if (songInfo[(int)QueueInfoType.Album].Length == 0)
+                        {
+                            songInfo[(int)QueueInfoType.Album] = "Unknown Album";
+                        }
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Title.ToString().ToLower()) == 0)
                     {

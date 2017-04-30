@@ -813,28 +813,28 @@ namespace GPMDPPlugin
                 API.Log(API.LogType.Debug, e.ToString());
             }
 
-            String repeatString = "{\n";
-            repeatString += "\"namespace\": \"playback\",\n";
-            repeatString += "\"method\": \"setCurrentTime\",\n";
-            repeatString += "\"arguments\": [" + timeInms + "]\n";
-            repeatString += "}";
-            ws.SendAsync(repeatString, null);
+            String positionString = "{\n";
+            positionString += "\"namespace\": \"playback\",\n";
+            positionString += "\"method\": \"setCurrentTime\",\n";
+            positionString += "\"arguments\": [" + timeInms + "]\n";
+            positionString += "}";
+            ws.SendAsync(positionString, null);
         }
         private static void GPMDPToggleThumbsUp()
         {
-            String repeatString = "{\n";
-            repeatString += "\"namespace\": \"rating\",\n";
-            repeatString += "\"method\": \"toggleThumbsUp\"\n";
-            repeatString += "}";
-            ws.SendAsync(repeatString, null);
+            String ratingString = "{\n";
+            ratingString += "\"namespace\": \"rating\",\n";
+            ratingString += "\"method\": \"toggleThumbsUp\"\n";
+            ratingString += "}";
+            ws.SendAsync(ratingString, null);
         }
         private static void GPMDPToggleThumbsDown()
         {
-            String repeatString = "{\n";
-            repeatString += "\"namespace\": \"rating\",\n";
-            repeatString += "\"method\": \"toggleThumbsDown\"\n";
-            repeatString += "}";
-            ws.SendAsync(repeatString, null);
+            String ratingString = "{\n";
+            ratingString += "\"namespace\": \"rating\",\n";
+            ratingString += "\"method\": \"toggleThumbsDown\"\n";
+            ratingString += "}";
+            ws.SendAsync(ratingString, null);
         }
         private static void GPMDPSetRating(int rating)
         {
@@ -842,12 +842,12 @@ namespace GPMDPPlugin
             else if (rating == 0) { rating = 3; }
             else if (rating == -1) { rating = 5; }
 
-            String repeatString = "{\n";
-            repeatString += "\"namespace\": \"rating\",\n";
-            repeatString += "\"method\": \"setRating\",\n";
-            repeatString += "\"arguments\": [" + rating + "]\n";
-            repeatString += "}";
-            ws.SendAsync(repeatString, null);
+            String ratingString = "{\n";
+            ratingString += "\"namespace\": \"rating\",\n";
+            ratingString += "\"method\": \"setRating\",\n";
+            ratingString += "\"arguments\": [" + rating + "]\n";
+            ratingString += "}";
+            ws.SendAsync(ratingString, null);
         }
         private static void GPMDPSetVolume(String volume)
         {
@@ -869,12 +869,12 @@ namespace GPMDPPlugin
             if (volumeToSet > 100) { volumeToSet = 100;  }
             else if(volumeToSet < 0) { volumeToSet = 0; }
 
-            String repeatString = "{\n";
-            repeatString += "\"namespace\": \"volume\",\n";
-            repeatString += "\"method\": \"setVolume\",\n";
-            repeatString += "\"arguments\": [" + volumeToSet + "]\n";
-            repeatString += "}";
-            ws.SendAsync(repeatString, null);
+            String volumeString = "{\n";
+            volumeString += "\"namespace\": \"volume\",\n";
+            volumeString += "\"method\": \"setVolume\",\n";
+            volumeString += "\"arguments\": [" + volumeToSet + "]\n";
+            volumeString += "}";
+            ws.SendAsync(volumeString, null);
         }
 
         //UNUSED, turns out you can not do a manual request to get genre. Shelved until GPMDP supports it which they have no plans to

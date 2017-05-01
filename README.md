@@ -31,7 +31,7 @@ Future: Dynamically sized queue so you can go more than 10 into the past or futu
 Authentication should now be fully automatic so an authentication skin should not be necessary, but in the event it stays 1 the automatic authentication has failed.
 
 ### BANGS
-**SetPosition ##.####** - Where ##.#### is a Double between 0-100. Sets the what percent of the way through the song the song is.  
+**SetPosition ##.####** - Where ##.#### is a Double between 0-100. Sets the what percent of the way through the song the song is. Add + or - in front to set the position relatively  
 **SetVolume ###** - Where ### is a Integer beween 0-100, add + or - in front to set the volume relatively
 **Note** this and Progress just started supporting double's instead of int, if you need an int or are having issues contact me.   
 **Previous, PlayPause, Next** - Self explanitory, note previous set the song back to the start before going back to the previous song, PlayPause is a toggle and there is not currently a play or pause that just does that if it is requested in the future I could add this but GPMDP does not support it  

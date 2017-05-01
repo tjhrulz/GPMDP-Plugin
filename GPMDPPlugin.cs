@@ -613,6 +613,8 @@ namespace GPMDPPlugin
                     file.Close();
 
                     bool fileNeedsAdjusted = false;
+
+                    bool fileContainsPlaybackAPISection = false;
                     bool fileContainsAuthcodeSection = false;
 
                     foreach (JToken setting in settingsFile.Children())
@@ -654,6 +656,8 @@ namespace GPMDPPlugin
                         }
                         else if (setting.Path.ToString().CompareTo("playbackAPI") == 0 && !fileIsAdjusted)
                         {
+                            fileContainsPlaybackAPISection = true;
+
                             if (setting.First.ToString().ToLower().Contains("false"))
                             {
                                 setting.First.Replace("true");
@@ -695,7 +699,14 @@ namespace GPMDPPlugin
                         }
                     }
 
-                    if(!fileContainsAuthcodeSection && !fileNeedsAdjusted && !fileIsAdjusted)
+                    if (!fileContainsPlaybackAPISection && !fileIsAdjusted)
+                    {
+                        settingsFile.Add("playbackAPI", "true");
+
+                        fileNeedsAdjusted = true;
+                    }
+
+                    if (!fileContainsAuthcodeSection && !fileIsAdjusted)
                     {
                         settingsFile.Remove("authorized_devices");
 
@@ -709,7 +720,7 @@ namespace GPMDPPlugin
                         fileNeedsAdjusted = true;
                     }
 
-                    if(fileNeedsAdjusted && !fileIsAdjusted)
+                    if (fileNeedsAdjusted && !fileIsAdjusted)
                     {
                         fileIsAdjusted = true;
                         adjustGPMDPSettings(settingsFile);

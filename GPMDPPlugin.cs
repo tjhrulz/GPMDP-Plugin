@@ -39,8 +39,9 @@ namespace GPMDPPlugin
                 Cover = defaultCoverLocation;
                 CoverWebAddress = "";
                 //File = "";
-                Duration = "00:00";
-                Position = "00:00";
+                //Position and duration now calculated at update time so it respects DisableLeadingZero
+                //Duration = "00:00";
+                //Position = "00:00";
                 Lyrics = "";
                 ThemeColor = "222, 79, 44";
 
@@ -70,8 +71,8 @@ namespace GPMDPPlugin
             public string Cover { get; set; }
             public string CoverWebAddress { get; set; }
             //public string File { get; set; }
-            public string Duration { get; set; }
-            public string Position { get; set; }
+            //public string Duration { get; set; }
+            //public string Position { get; set; }
             public double Progress { get; set; }
             public int DurationInms { get; set; }
             public int PositionInms { get; set; }
@@ -137,6 +138,8 @@ namespace GPMDPPlugin
         private static string defaultCoverLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
         private static string coverOutputLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
 
+        private int asDecimal = 0;
+        private int disableLeadingZero = 0;
 
         private static List<string[]> queueInfoList = new List<string[]>();
         private static int lastKnownQueueLocation = 0;
@@ -262,11 +265,6 @@ namespace GPMDPPlugin
                                             {
                                                 websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
                                             }
-                                            int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-                                            int trackMinutes = trackSeconds / 60;
-                                            trackSeconds = trackSeconds % 60;
-
-                                            websocketInfoGPMDP.Position = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
                                         }
                                         catch (Exception e)
                                         {
@@ -283,11 +281,6 @@ namespace GPMDPPlugin
                                             {
                                                 websocketInfoGPMDP.Progress = ((double)websocketInfoGPMDP.PositionInms / (double)websocketInfoGPMDP.DurationInms * 100);
                                             }
-                                            int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-                                            int trackMinutes = trackSeconds / 60;
-                                            trackSeconds = trackSeconds % 60;
-
-                                            websocketInfoGPMDP.Duration = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
                                         }
                                         catch (Exception e)
                                         {
@@ -1294,15 +1287,21 @@ namespace GPMDPPlugin
 
                 case "duration":
                     InfoType = MeasureInfoType.Duration;
+                    disableLeadingZero = api.ReadInt("DisableLeadingZero", 0);
+                    
                     break;
 
                 case "position":
                     InfoType = MeasureInfoType.Position;
+                    disableLeadingZero = api.ReadInt("DisableLeadingZero", 0);
+
                     break;
 
                 case "progress":
                     InfoType = MeasureInfoType.Progress;
                     maxValue = 100.0;
+                    asDecimal = api.ReadInt("AsDecimal", 0);
+                    
                     break;
 
                 case "rating":
@@ -1509,6 +1508,10 @@ namespace GPMDPPlugin
                 case MeasureInfoType.Volume:
                     return websocketInfoGPMDP.Volume;
                 case MeasureInfoType.Progress:
+                    if(asDecimal == 1)
+                    {
+                        return websocketInfoGPMDP.Progress / 100.0;
+                    }
                     return websocketInfoGPMDP.Progress;
                 case MeasureInfoType.Rating:
                     return websocketInfoGPMDP.Rating;
@@ -1544,9 +1547,25 @@ namespace GPMDPPlugin
                 case MeasureInfoType.CoverWebAddress:
                     return websocketInfoGPMDP.CoverWebAddress;
                 case MeasureInfoType.Duration:
-                    return websocketInfoGPMDP.Duration;
+                    int trackSecondsDur = websocketInfoGPMDP.DurationInms / 1000;
+                    int trackMinutesDur = trackSecondsDur / 60;
+                    trackSecondsDur = trackSecondsDur % 60;
+
+                    if (disableLeadingZero == 0)
+                    {
+                        return trackMinutesDur.ToString().PadLeft(2, '0') + ":" + trackSecondsDur.ToString().PadLeft(2, '0');
+                    }
+                    return trackMinutesDur.ToString().PadLeft(1, '0') + ":" + trackSecondsDur.ToString().PadLeft(2, '0');
                 case MeasureInfoType.Position:
-                    return websocketInfoGPMDP.Position;
+                    int trackSecondsPos = websocketInfoGPMDP.PositionInms / 1000;
+                    int trackMinutesPos = trackSecondsPos / 60;
+                    trackSecondsPos = trackSecondsPos % 60;
+
+                    if (disableLeadingZero == 0)
+                    {
+                        return trackMinutesPos.ToString().PadLeft(2, '0') + ":" + trackSecondsPos.ToString().PadLeft(2, '0');
+                    }
+                    return trackMinutesPos.ToString().PadLeft(1, '0') + ":" + trackSecondsPos.ToString().PadLeft(2, '0');
                 case MeasureInfoType.Lyrics:
                     return websocketInfoGPMDP.Lyrics;
                 case MeasureInfoType.ThemeColor:

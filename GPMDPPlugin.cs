@@ -458,7 +458,7 @@ namespace GPMDPPlugin
                     }
                     else if (type.CompareTo("result") == 0 && acceptedVersion == true)
                     {
-
+                        System.Console.WriteLine(d.Data);
                         //JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
                         //JArray arrayData = new JArray(data);
                         //API.Log(API.LogType.Notice, "data:" + data);
@@ -594,7 +594,7 @@ namespace GPMDPPlugin
 
         //This is to prevent multiple writes from happening to the settings file
         private static bool fileIsAdjusted = false;
-
+        //These get and adjust if needed the GPMDP settings
         private static void getGPMDPSettings()
         {
             try
@@ -743,7 +743,6 @@ namespace GPMDPPlugin
                 API.Log(API.LogType.Error, "Unable to locate GPMDP settings file, you will need to use an authenication skin to get playback controls and custom theme colors will be unsupported");
             }
         }
-
         private static void adjustGPMDPSettings(JObject settingsFile)
         {
             try
@@ -772,6 +771,7 @@ namespace GPMDPPlugin
                 API.Log(API.LogType.Warning, "Unable to relaunch GPMDP after first run settings change, you will need to relaunch it manually");
             }
         }
+
         //These are functions that handle the sending of various GPMDP websocket commands
         //In theory if these were called before the websocket has been setup the could error but that would be impossible in rainmeter so adding the overhead for checks is unneeded.
         private static void GPMDPPlayPause()
@@ -907,6 +907,22 @@ namespace GPMDPPlugin
             ws.SendAsync(playPauseString, null);
         }
 
+        //TODO Finish this
+        private static void GPMDPQueuePlayTrack(string[] track)
+        {
+            if (track.Length == Enum.GetNames(typeof(QueueInfoType)).Length)
+            {
+                //TODO change the requestID from being a constant to using an internal ID system.
+                String playPauseString = "{\n";
+                playPauseString += "\"namespace\": \"queue\",\n";
+                playPauseString += "\"method\": \"playTrack\",\n";
+                playPauseString += "\"arguments\": " + track + "\n";
+                playPauseString += "\"requestID\": " + 1 + "\n";
+                playPauseString += "}";
+                ws.SendAsync(playPauseString, null);
+            }
+        }
+
 
         //For downloading the image from the internet
         public static void GetImageFromUrl(string url, string filePath)
@@ -952,6 +968,8 @@ namespace GPMDPPlugin
                 return ms.ToArray();
             }
         }
+
+        //For updating the queue displayed to the user
         private static void updateQueueInfo(JToken queueInfo)
         {
             queueInfoList.Clear();
@@ -989,20 +1007,7 @@ namespace GPMDPPlugin
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Duration.ToString().ToLower()) == 0)
                     {
-                        try
-                        {
-                            int trackSeconds = Convert.ToInt32(trackInfo.First.ToString()) / 1000;
-
-                            int trackMinutes = trackSeconds / 60;
-                            trackSeconds = trackSeconds % 60;
-
-                            songInfo[(int)QueueInfoType.Duration] = trackMinutes.ToString().PadLeft(2, '0') + ":" + trackSeconds.ToString().PadLeft(2, '0');
-                        }
-                        catch (Exception e)
-                        {
-                            API.Log(API.LogType.Error, "Unable to convert the duration of a song in the queue from GPMDP, report this issue on the GPMDP plugin github page");
-                            API.Log(API.LogType.Debug, e.ToString());
-                        }
+                        songInfo[(int)QueueInfoType.Duration] = trackInfo.First.ToString();
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.PlayCount.ToString().ToLower()) == 0)
                     {
@@ -1363,6 +1368,7 @@ namespace GPMDPPlugin
                     InfoType = MeasureInfoType.Queue;
 
                     String queueLoc = api.ReadString("QueueLocation", "0");
+                    disableLeadingZero = api.ReadInt("DisableLeadingZero", 0);
 
                     try
                     { 
@@ -1590,8 +1596,28 @@ namespace GPMDPPlugin
                     return lastKnownThemeColor;
                 case MeasureInfoType.Queue:
                     //Add ten to it so locations 0-9 map to -10 through -1, 0 maps to 10, and 1-10 map to 11-21
-                    return websocketInfoGPMDP.Queue[myQueueLocationToRead+10][(int)myQueueInfoType];
+                    if (myQueueInfoType == QueueInfoType.Duration)
+                    {
+                        try
+                        {
+                            int trackSecondsQueue = Convert.ToInt32(websocketInfoGPMDP.Queue[myQueueLocationToRead + 10][(int)myQueueInfoType]) / 1000;
 
+                            int trackMinutesQueue = trackSecondsQueue / 60;
+                            trackSecondsQueue = trackSecondsQueue % 60;
+                            
+                            if (disableLeadingZero == 0)
+                            {
+                                return trackMinutesQueue.ToString().PadLeft(2, '0') + ":" + trackSecondsQueue.ToString().PadLeft(2, '0');
+                            }
+                            return trackMinutesQueue.ToString().PadLeft(1, '0') + ":" + trackSecondsQueue.ToString().PadLeft(2, '0');
+                        }
+                        catch (Exception e)
+                        {
+                            API.Log(API.LogType.Error, "Unable to convert the duration of a song in the queue from GPMDP, report this issue on the GPMDP plugin github page");
+                            API.Log(API.LogType.Debug, e.ToString());
+                        }
+                    }
+                    return websocketInfoGPMDP.Queue[myQueueLocationToRead+10][(int)myQueueInfoType];
 
                 //These values are integers returned in update
                 case MeasureInfoType.Repeat:

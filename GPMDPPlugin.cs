@@ -28,7 +28,6 @@ namespace GPMDPPlugin
                 PositionInms = 0;
                 Progress = 0;
                 Rating = 0;
-                ThemeType = 0;
 
                 Artist = "";
                 Album = "";
@@ -43,7 +42,9 @@ namespace GPMDPPlugin
                 //Duration = "00:00";
                 //Position = "00:00";
                 Lyrics = "";
-                ThemeColor = "222, 79, 44";
+
+                //ThemeType = 0;
+                //ThemeColor = "222, 79, 44";
 
                 Queue = new List<string[]>();
                
@@ -83,8 +84,8 @@ namespace GPMDPPlugin
             public int Status { get; set; }
             public int Volume { get; set; }
             public string Lyrics { get; set; }
-            public int ThemeType { get; set; }
-            public string ThemeColor { get; set; }
+            //public int ThemeType { get; set; }
+            //public string ThemeColor { get; set; }
             public List<string[]> Queue { get; set; }
         }
         enum MeasureInfoType
@@ -137,6 +138,8 @@ namespace GPMDPPlugin
         private static musicInfo websocketInfoGPMDP = new musicInfo();
         private static string defaultCoverLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
         private static string coverOutputLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
+        private static int lastKnownThemeType = 0;
+        private static string lastKnownThemeColor = "222, 79, 44";
 
         private int asDecimal = 0;
         private int disableLeadingZero = 0;
@@ -492,11 +495,11 @@ namespace GPMDPPlugin
                             {
                                 if (currentValue.ToString().ToUpper().CompareTo("FULL") == 0)
                                 {
-                                    websocketInfoGPMDP.ThemeType = 1;
+                                    lastKnownThemeType = 1;
                                 }
                                 else
                                 {
-                                    websocketInfoGPMDP.ThemeType = 0;
+                                    lastKnownThemeType = 0;
                                 }
                             }
                             else if (currentProperty.ToString().ToLower().Contains("themecolor") && acceptedVersion == true)
@@ -507,7 +510,7 @@ namespace GPMDPPlugin
                                 {
                                     if (rgbString.ToLower().Contains("rgb"))
                                     {
-                                        websocketInfoGPMDP.ThemeColor = rgbString.Substring(rgbString.IndexOf("(") + 1, rgbString.IndexOf(")") - rgbString.IndexOf("(") - 1);
+                                        lastKnownThemeColor = rgbString.Substring(rgbString.IndexOf("(") + 1, rgbString.IndexOf(")") - rgbString.IndexOf("(") - 1);
                                     }
                                     else
                                     {
@@ -517,7 +520,7 @@ namespace GPMDPPlugin
                                         string g = Convert.ToInt32(rgbString.Substring(2, 2), 16).ToString();
                                         string b = Convert.ToInt32(rgbString.Substring(4, 2), 16).ToString();
 
-                                        websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
+                                        lastKnownThemeColor = r + ", " + g + ", " + b;
                                     }
                                 }
                                 catch (Exception e)
@@ -620,7 +623,7 @@ namespace GPMDPPlugin
                             {
                                 if (settingsColor.ToLower().Contains("rgb"))
                                 {
-                                    websocketInfoGPMDP.ThemeColor = settingsColor.Substring(settingsColor.IndexOf("(") + 1, settingsColor.IndexOf(")") - settingsColor.IndexOf("(") - 1);
+                                    lastKnownThemeColor = settingsColor.Substring(settingsColor.IndexOf("(") + 1, settingsColor.IndexOf(")") - settingsColor.IndexOf("(") - 1);
                                 }
                                 else
                                 {
@@ -630,13 +633,24 @@ namespace GPMDPPlugin
                                     string g = Convert.ToInt32(settingsColor.Substring(2, 2), 16).ToString();
                                     string b = Convert.ToInt32(settingsColor.Substring(4, 2), 16).ToString();
 
-                                    websocketInfoGPMDP.ThemeColor = r + ", " + g + ", " + b;
+                                    lastKnownThemeColor = r + ", " + g + ", " + b;
                                 }
                             }
                             catch (Exception e)
                             {
                                 API.Log(API.LogType.Error, "Unable to convert the theme color from GPMDP settings file, report this issue on the GPMDP plugin github page");
                                 API.Log(API.LogType.Debug, e.ToString());
+                            }
+                        }
+                        else if (setting.Path.ToString().CompareTo("themeType") == 0)
+                        {
+                            if (setting.First.ToString().ToUpper().CompareTo("FULL") == 0)
+                            {
+                                lastKnownThemeType = 1;
+                            }
+                            else
+                            {
+                                lastKnownThemeType = 0;
                             }
                         }
                         else if (setting.Path.ToString().CompareTo("enableJSON_API") == 0 && !fileIsAdjusted)
@@ -1516,7 +1530,7 @@ namespace GPMDPPlugin
                 case MeasureInfoType.Rating:
                     return websocketInfoGPMDP.Rating;
                 case MeasureInfoType.ThemeType:
-                    return websocketInfoGPMDP.ThemeType;
+                    return lastKnownThemeType;
                 case MeasureInfoType.Duration:
                     return Math.Floor(((double)websocketInfoGPMDP.DurationInms / 1000));
                 case MeasureInfoType.Position:
@@ -1569,7 +1583,7 @@ namespace GPMDPPlugin
                 case MeasureInfoType.Lyrics:
                     return websocketInfoGPMDP.Lyrics;
                 case MeasureInfoType.ThemeColor:
-                    return websocketInfoGPMDP.ThemeColor;
+                    return lastKnownThemeColor;
                 case MeasureInfoType.Queue:
                     //Add ten to it so locations 0-9 map to -10 through -1, 0 maps to 10, and 1-10 map to 11-21
                     return websocketInfoGPMDP.Queue[myQueueLocationToRead+10][(int)myQueueInfoType];

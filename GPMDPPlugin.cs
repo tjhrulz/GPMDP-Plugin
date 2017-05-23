@@ -35,7 +35,7 @@ namespace GPMDPPlugin
                 //Number = "";
                 //Year = "";
                 //Genre = "";
-                Cover = defaultCoverLocation;
+                Cover = null;
                 CoverWebAddress = "";
                 //File = "";
                 //Position and duration now calculated at update time so it respects DisableLeadingZero
@@ -136,7 +136,7 @@ namespace GPMDPPlugin
         private const String supportedAPIVersion = "1.1.0";
 
         private static musicInfo websocketInfoGPMDP = new musicInfo();
-        private static string defaultCoverLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
+        private string defaultCoverLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
         private static string coverOutputLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
         private static int lastKnownThemeType = 0;
         private static string lastKnownThemeColor = "222, 79, 44";
@@ -313,13 +313,13 @@ namespace GPMDPPlugin
                                     {
                                         if (trackInfo.First.ToString().CompareTo("https://play-music.gstatic.com/fe/b4e4cdbe96eaa20575d478077df5c6b5/default_album_med.png") != 0)
                                         {
-                                            websocketInfoGPMDP.Cover = defaultCoverLocation;
+                                            websocketInfoGPMDP.Cover = null;
                                             Thread t = new Thread(() => GetImageFromUrl(trackInfo.First.ToString(), coverOutputLocation));
                                             t.Start();
                                         }
                                         else
                                         {
-                                            websocketInfoGPMDP.Cover = defaultCoverLocation;
+                                            websocketInfoGPMDP.Cover = null;
                                             websocketInfoGPMDP.CoverWebAddress = "https://play-music.gstatic.com/fe/b4e4cdbe96eaa20575d478077df5c6b5/default_album_med.png";
                                         }
                                     }
@@ -1557,7 +1557,11 @@ namespace GPMDPPlugin
                 //case MeasureInfoType.Genre:
                 //    return websocketInfoGPMDP.Genre;
                 case MeasureInfoType.Cover:
-                    return websocketInfoGPMDP.Cover;
+                    if (websocketInfoGPMDP.Cover != null)
+                    {
+                        return websocketInfoGPMDP.Cover;
+                    }
+                    return defaultCoverLocation;
                 case MeasureInfoType.CoverWebAddress:
                     return websocketInfoGPMDP.CoverWebAddress;
                 case MeasureInfoType.Duration:

@@ -46,21 +46,17 @@ namespace GPMDPPlugin
                 //ThemeType = 0;
                 //ThemeColor = "222, 79, 44";
 
-                Queue = new List<string[]>();
+                Queue = new List<JToken>();
                
                //This loop populates queue with 21 peices of information
                //This will be interpreted 0-9 as last 10 songs, 10 is current, 11-20 is next 10
                //TODO Make how many songs are kept in each direction dynamic
                for (int i = 0; i <= 20; i++)
                {
-                   string[] info = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
-                   //TODO evaluate if I want to have different default values
-                   //I dont think I will as the user substituting "" with N/A would make more sense in most cases
-                   for(int j = 0; j < info.Length; j++)
-                   {
-                       info[j] = "";
-                   }
-                   Queue.Add(info);
+                    //TODO Fill with legit property names
+                    JToken blankInfo = new JObject();
+
+                    Queue.Add(blankInfo);
                }
             }
             public string Artist { get; set; }
@@ -86,7 +82,7 @@ namespace GPMDPPlugin
             public string Lyrics { get; set; }
             //public int ThemeType { get; set; }
             //public string ThemeColor { get; set; }
-            public List<string[]> Queue { get; set; }
+            public List<JToken> Queue { get; set; }
         }
         enum MeasureInfoType
         {
@@ -121,7 +117,11 @@ namespace GPMDPPlugin
             Duration = 4,
             PlayCount = 5,
             Index = 6,
-            ID = 7
+            ID = 7,
+            AlbumArtist = 8,
+            AlbumID = 9,
+            ArtistID = 10,
+            ArtistImage = 11,
         }
 
         //Info and player type of the measure
@@ -144,7 +144,7 @@ namespace GPMDPPlugin
         private int asDecimal = 0;
         private int disableLeadingZero = 0;
 
-        private static List<string[]> queueInfoList = new List<string[]>();
+        private static List<JToken> queueInfoList = new List<JToken>();
         private static int lastKnownQueueLocation = 0;
         private static Thread queueUpdateThread;
         private static Thread relativeQueueUpdateThread;
@@ -157,6 +157,8 @@ namespace GPMDPPlugin
         private static Thread GPMReconnectThread = new Thread(Measure.isGPMDPWebsocketConnected);
         private static int GPMReconnectTimer;
         private const int timeBetweenReconnectAttempts = 1000;
+
+        //private static List<JObject> queueSongsFromGet = new List<JObject>();
 
         //The channel names that are handled in the OnMessage for the GPMDP websocket
         enum GPMInfoSupported
@@ -458,28 +460,39 @@ namespace GPMDPPlugin
                     }
                     else if (type.CompareTo("result") == 0 && acceptedVersion == true)
                     {
-                        System.Console.WriteLine(d.Data);
-                        //JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
-                        //JArray arrayData = new JArray(data);
-                        //API.Log(API.LogType.Notice, "data:" + data);
-                        //foreach (JToken token in arrayData)
-                        //{
-                        //    JToken currentProperty = token.First.Last;
-                        //    JToken currentValue = token.Last.Last;
-                        //
-                        //    foreach (JProperty trackInfo in currentValue)
-                        //    {
-                        //        JToken currentPropertyT = trackInfo.Name;
-                        //        JToken currentValueT = trackInfo.First;
-                        //
-                        //
-                        //        //API.Log(API.LogType.Notice, "prop:" + currentPropertyT);
-                        //        //API.Log(API.LogType.Notice, "value:" + currentValueT);
-                        //        API.Log(API.LogType.Notice, currentPropertyT + ":" + currentValueT);
-                        //    }
-                        //
-                        //}
-                        ////API.Log(API.LogType.Notice, "data:" + d.Data);
+                        JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
+                        JArray arrayData = new JArray(data);
+                        //Debug.WriteLine(data.First.Next.ToString());
+                        API.Log(API.LogType.Notice, "data:" + data);
+
+                        if (data.First.Next.ToString() == "\"requestID\": 3")
+                        {
+                            //queueInfoList.Clear();
+                            //foreach (JToken token in arrayData)
+                            //{
+                            //    JToken currentProperty = token.First.Last;
+                            //    JToken currentValue = token.Last.Last;
+                            //
+                            //    Debug.WriteLine(currentProperty + ":" + currentValue);
+                            //
+                            //    foreach (JObject track in currentValue)
+                            //    {
+                            //        queueSongsFromGet.Add(track);
+                            //        //foreach (JProperty trackInfo in track.Children())
+                            //        //{
+                            //        //    JToken currentPropertyT = trackInfo.Name;
+                            //        //    JToken currentValueT = trackInfo.First;
+                            //        //
+                            //        //
+                            //        //    //API.Log(API.LogType.Notice, "prop:" + currentPropertyT);
+                            //        //    //API.Log(API.LogType.Notice, "value:" + currentValueT);
+                            //        //    API.Log(API.LogType.Notice, currentPropertyT + ":" + currentValueT);
+                            //        //}
+                            //    }
+                            //
+                            //}
+                        }
+                        //API.Log(API.LogType.Notice, "data:" + d.Data);
                     }
                     else if(type.Contains("theme"))
                     {
@@ -906,18 +919,32 @@ namespace GPMDPPlugin
             playPauseString += "}";
             ws.SendAsync(playPauseString, null);
         }
+        
+        private static void GPMDPGetQueueTracks()
+        {
+            //TODO change the requestID from being a constant to using an internal ID system.
+            String playPauseString = "{\n";
+            playPauseString += "\"namespace\": \"queue\",\n";
+            playPauseString += "\"method\": \"getTracks\",\n";
+            playPauseString += "\"requestID\": " + 3 + "\n";
+            playPauseString += "}";
+            ws.SendAsync(playPauseString, null);
+        }
 
         //TODO Finish this
-        private static void GPMDPQueuePlayTrack(string[] track)
+        private static void GPMDPQueuePlayTrack(int trackLoc)
         {
-            if (track.Length == Enum.GetNames(typeof(QueueInfoType)).Length)
+            if (queueInfoList.Count > trackLoc)
             {
+                //GPMDPGetQueueTracks();
+
                 //TODO change the requestID from being a constant to using an internal ID system.
+                //TODO Use objects for command strings instead of this trash, it was okay before when it was just a few hacky lines now its borderline unreadable
                 String playPauseString = "{\n";
                 playPauseString += "\"namespace\": \"queue\",\n";
                 playPauseString += "\"method\": \"playTrack\",\n";
-                playPauseString += "\"arguments\": " + track + "\n";
-                playPauseString += "\"requestID\": " + 1 + "\n";
+                playPauseString += "\"arguments\": [\n" + queueInfoList[trackLoc] + "\n],\n";
+                playPauseString += "\"requestID\": " + 2 + "\n";
                 playPauseString += "}";
                 ws.SendAsync(playPauseString, null);
             }
@@ -986,7 +1013,7 @@ namespace GPMDPPlugin
                         songInfo[(int)QueueInfoType.Artist] = trackInfo.First.ToString();
                         if(songInfo[(int)QueueInfoType.Artist].Length == 0)
                         {
-                            songInfo[(int)QueueInfoType.Artist] = "Unknown Artist";
+                            //songInfo[(int)QueueInfoType.Artist] = "Unknown Artist";
                         }
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Album.ToString().ToLower()) == 0)
@@ -994,7 +1021,7 @@ namespace GPMDPPlugin
                         songInfo[(int)QueueInfoType.Album] = trackInfo.First.ToString();
                         if (songInfo[(int)QueueInfoType.Album].Length == 0)
                         {
-                            songInfo[(int)QueueInfoType.Album] = "Unknown Album";
+                            //songInfo[(int)QueueInfoType.Album] = "Unknown Album";
                         }
                     }
                     else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Title.ToString().ToLower()) == 0)
@@ -1021,12 +1048,28 @@ namespace GPMDPPlugin
                     {
                         songInfo[(int)QueueInfoType.ID] = trackInfo.First.ToString();
                     }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.AlbumArtist.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.AlbumArtist] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.AlbumID.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.AlbumID] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.ArtistID.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.ArtistID] = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.ArtistImage.ToString().ToLower()) == 0)
+                    {
+                        songInfo[(int)QueueInfoType.ArtistImage] = trackInfo.First.ToString();
+                    }
                     //else
                     //{
                     //    API.Log(API.LogType.Notice, "Unsupported queueu info:" + trackInfo.Name.ToString());
                     //}
                 }
-                queueInfoList.Add(songInfo);
+                queueInfoList.Add(track);
             }
         }
         private static void updateRelativeQueue()
@@ -1037,193 +1080,7 @@ namespace GPMDPPlugin
             }
             if (queueInfoList.Count > 0)
             {
-                //Get these to begin with to prevent them changing part way through and getting no result
-                string titleToLookFor = websocketInfoGPMDP.Title;
-                string artistToLookFor = websocketInfoGPMDP.Artist;
-                string albumToLookFor = websocketInfoGPMDP.Album;
-                int currentIndex = 0;
-
-                bool foundMatch = false;
-                bool finishedSearch = false;
-
-                int currentLocation = lastKnownQueueLocation;
-                int offset = 0;
-                bool hitBeginningOfQueue = false;
-                bool hitEndOfQueue = false;
-
-                //TODO it is not safe to assume that queue is sent after the song info has been updated, I now really need to get thread killing working
-
-                //Optimized searching algorithm, looks in last known location, then takes turns looking on either side until you cant look further on one side and then only looks on the other side.
-                //In most cases this means that the new current song should be found in only 1-3 compares of current info
-                //In the even that the user selects a different song on the queue then the ammount of compares will be 2*DistanceFromLastSong
-                while (!foundMatch && !finishedSearch)
-                {
-                    if (queueInfoList[currentLocation][(int)QueueInfoType.Title].CompareTo(titleToLookFor) == 0)
-                    {
-                        if (queueInfoList[currentLocation][(int)QueueInfoType.Album].CompareTo(albumToLookFor) == 0)
-                        {
-                            if (queueInfoList[currentLocation][(int)QueueInfoType.Artist].CompareTo(artistToLookFor) == 0)
-                            {
-                                //Index starts a 1 not 0 so subtract 1 from it
-                                try
-                                {
-                                    currentIndex = Convert.ToInt32(queueInfoList[currentLocation][(int)QueueInfoType.Index]) - 1;
-                                }
-                                catch (Exception e)
-                                {
-                                    API.Log(API.LogType.Error, "Unable to convert index of a song in the queue from GPMDP, report this issue on the GPMDP plugin github page");
-                                    API.Log(API.LogType.Debug, e.ToString());
-                                }
-                                foundMatch = true;
-                            }
-                        }
-                    }
-
-                    offset *= -1;
-                    if (offset < 0 && !hitBeginningOfQueue && !hitEndOfQueue)
-                    {
-                        offset -= 1;
-
-                        if (currentLocation + offset > 0)
-                        {
-                            currentLocation = currentLocation + offset;
-                        }
-                        else
-                        {
-                            if (currentLocation + 1 < queueInfoList.Count)
-                            {
-                                currentLocation = currentLocation + 1;
-                                hitBeginningOfQueue = true;
-                            }
-                            else
-                            {
-                                finishedSearch = true;
-                                API.Log(API.LogType.Error, "No song was found in the queue that matches the current song");
-                            }
-                        }
-                    }
-                    else if (offset >= 0 && !hitEndOfQueue && !hitBeginningOfQueue)
-                    {
-                        offset += 1;
-
-                        if (currentLocation + offset < queueInfoList.Count)
-                        {
-                            currentLocation = currentLocation + offset;
-                        }
-                        else
-                        {
-                            if (currentLocation - 1 > 0)
-                            {
-                                currentLocation = currentLocation - 1;
-                                hitEndOfQueue = true;
-                            }
-                            else
-                            {
-                                finishedSearch = true;
-                                API.Log(API.LogType.Error, "No song was found in the queue that matches the current song");
-                            }
-                        }
-                    }
-                    else if (hitBeginningOfQueue)
-                    {
-                        if (currentLocation + 1 < queueInfoList.Count)
-                        {
-                            currentLocation += 1;
-                        }
-                        else
-                        {
-                            finishedSearch = true;
-                            API.Log(API.LogType.Error, "No song was found in the queue that matches the current song");
-                        }
-                    }
-                    else if (hitEndOfQueue)
-                    {
-                        if (currentLocation - 1 > 0)
-                        {
-                            currentLocation -= 1;
-                        }
-                        else
-                        {
-                            finishedSearch = true;
-                            API.Log(API.LogType.Error, "No song was found in the queue that matches the current song");
-                        }
-                    }
-
-                }
-
-                //Check if a match was found if no match was keep queue data the same and notify user
-                if (foundMatch)
-                {
-                    //If the queue range exists just set queue to it
-                    if (currentIndex - 10 >= 0 && queueInfoList.Count > currentIndex + 10)
-                    {
-                        websocketInfoGPMDP.Queue = queueInfoList.GetRange(currentIndex - 10, 21);
-                    }
-                    else
-                    {
-                        List<string[]> tempQueue = new List<string[]>();
-
-                        //TODO test this around the edges as I am fairly certain there is one or two OBOBs
-
-                        //The point relative to current index to start the range of songs to add the the queue
-                        int relativeStartPoint = -10;
-                        int numberToKeep = 21;
-
-                        //If queue has less than 10 songs before the current one populate with enough blanks that once the
-                        if (currentIndex - 10 < 0)
-                        {
-                            for (int i = currentIndex; i < 10; i++)
-                            {
-                                string[] info = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
-                                //TODO evaluate if I want to have different default values
-                                //I dont think I will as the user substituting "" with N/A would make more sense in most cases
-                                for (int j = 0; j < info.Length; j++)
-                                {
-                                    info[j] = "";
-                                }
-                                tempQueue.Add(info);
-                            }
-
-                            //Set relativeStartPoint to currenIndex so that we start the range at the beginning of the queue
-                            relativeStartPoint = -currentIndex;
-                            numberToKeep = numberToKeep - (10 + relativeStartPoint);
-                        }
-                        if (currentIndex + 10 >= queueInfoList.Count - 1)
-                        {
-                            numberToKeep = numberToKeep - (currentIndex + 10 - queueInfoList.Count + 1);
-                        }
-
-                        //BUG if there is exactly the number left in the queue after the currentIndex is trys to get one to many
-                        //Add to queue the range of info
-                        //This range is however many songs there are before the current song and however many there are after the current song that exist in queueInfoList 
-                        tempQueue.AddRange(queueInfoList.GetRange(currentIndex + relativeStartPoint, numberToKeep));
-
-                        //If queue has less than 10 songs after the current one populate with blanks 
-                        if (currentIndex + 10 >= queueInfoList.Count)
-                        {
-                            for (int i = (queueInfoList.Count - 1) - currentIndex; i < 10; i++)
-                            {
-                                string[] info = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
-                                //TODO evaluate if I want to have different default values
-                                //I dont think I will as the user substituting "" with N/A would make more sense in most cases
-                                for (int j = 0; j < info.Length; j++)
-                                {
-                                    info[j] = "";
-                                }
-                                tempQueue.Add(info);
-                            }
-                        }
-                        websocketInfoGPMDP.Queue = tempQueue;
-                    }
-                }
-                else
-                {
-                    API.Log(API.LogType.Error, "Keeping old queue as no match was found");
-                }
-                //foreach (string[] info in websocketInfoGPMDP.Queue)
-                //{
-                //    API.Log(API.LogType.Notice, info[(int)QueueInfoType.Title]);
-                //}
+                GPMDPGetExtraSongInfo();
             }
         }
         //To be used for reading and writing values from the rainmeter settings file
@@ -1415,12 +1272,6 @@ namespace GPMDPPlugin
             {
                 GPMDPPlayPause();
             }
-            else if (bang.Equals("play"))
-            {
-            }
-            else if (bang.Equals("pause"))
-            {
-            }
             else if (bang.Equals("next"))
             {
                 GPMDPForward();
@@ -1495,6 +1346,25 @@ namespace GPMDPPlugin
                     Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
                 }
             }
+            else if (bang.Contains("setsong"))
+            {
+                try
+                {
+                    int songLoc = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
+
+                    //TODO Fix songLoc to be relative and cap at extremes
+                    GPMDPQueuePlayTrack(songLoc);
+                }
+                catch (Exception e)
+                {
+                    API.Log(API.LogType.Error, "Unable to convert setSong argument to integer from command:" + args);
+                    API.Log(API.LogType.Debug, e.ToString());
+                }
+            }
+            //else if (bang.Contains("setSongAbsolute"))
+            //{
+            //    String songLoc = args.Substring(args.LastIndexOf(" "));
+            //}
             else if (bang.Contains("key"))
             {
                 //Get the last 4 chars of the keycode, this should ensure that we always get it even when bang is a little off
@@ -1617,7 +1487,7 @@ namespace GPMDPPlugin
                             API.Log(API.LogType.Debug, e.ToString());
                         }
                     }
-                    return websocketInfoGPMDP.Queue[myQueueLocationToRead+10][(int)myQueueInfoType];
+                    return websocketInfoGPMDP.Queue[myQueueLocationToRead + 10].ToString();//[(int)myQueueInfoType];
 
                 //These values are integers returned in update
                 case MeasureInfoType.Repeat:

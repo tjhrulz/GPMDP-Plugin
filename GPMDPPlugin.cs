@@ -140,7 +140,7 @@ namespace GPMDPPlugin
         private const String supportedAPIVersion = "1.1.0";
 
         private static musicInfo websocketInfoGPMDP = new musicInfo();
-        private string defaultCoverLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
+        private string defaultCoverLocation = "";
         private static string coverOutputLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
         private static int lastKnownThemeType = 0;
         private static string lastKnownThemeColor = "222, 79, 44";
@@ -1235,12 +1235,7 @@ namespace GPMDPPlugin
 
                 case "cover":
                     InfoType = MeasureInfoType.Cover;
-                    string newCoverLocation = api.ReadPath("DefaultPath", "");
-                    if (newCoverLocation.CompareTo(defaultCoverLocation) != 0)
-                    {
-                        defaultCoverLocation = newCoverLocation;
-                        websocketInfoGPMDP.Cover = newCoverLocation;
-                    }
+                    defaultCoverLocation = api.ReadPath("DefaultPath", "");
                     coverOutputLocation = api.ReadPath("CoverPath", "");
                     break;
 

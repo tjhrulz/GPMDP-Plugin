@@ -35,7 +35,7 @@ Included in this repo is a example skin that shows how to use every measure and 
   
 - `Position, Duration`
 
-  String of how far into the song or how long the song is, formated MM:SS. Position has a MaxValue of duration
+  String of how far into the song or how long the song is, formated MM:SS.
   
   **Attributes:**  
   DisableLeadingZero - If set to 1 strings will be formatted as M:SS 

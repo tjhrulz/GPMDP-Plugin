@@ -12,7 +12,7 @@ Included in this repo is a example skin that shows how to use every measure and 
 - Automatic authentification to GPMDP
 
 ### Future additions:
-- Performance improvements when not using queue, add support for accessing and setting songs in queue in a non relative fashion 
+- Performance improvements when not using queue, add support for accessing songs in queue in a non relative fashion 
 
 ## Measure types:
 
@@ -125,11 +125,11 @@ Included in this repo is a example skin that shows how to use every measure and 
   
 - `SetRating #`
 
-  when # is an integer, -1 is thumbs down, 0 is no rating, 1 is thumbs up.
+  Where # is an integer, -1 is thumbs down, 0 is no rating, 1 is thumbs up.
     
 - `SetSong #`
 
-  when # is an integer, sets what song to play in the current queue. So if # was 5 it will play the song 5 songs from now or if # is -2 it will play the song 2 songs ago. **Note** if you try to set a song outside the range of the queue it will clamp to the first or last song in the queue.
+  Where # is an integer, sets what song to play in the current queue. Add - or + before integer to access relatively. So -2 will set to the song 2 songs ago, 2 will set to the second song in the queue overall, and +2 will set it to 2 songs from current **Note** if you try to set a song outside the range of the queue it will clamp to the first or last song in the queue.
   
 - `OpenPlayer`, `ClosePlayer` and `TogglePlayer`
   

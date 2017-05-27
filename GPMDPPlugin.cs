@@ -1101,58 +1101,72 @@ namespace GPMDPPlugin
         {
             string songInfo = "";
 
-            foreach (JProperty trackInfo in websocketInfoGPMDP.Queue[queueLoc])
+            if (queueLoc >= 0 && queueLoc < websocketInfoGPMDP.Queue.Count)
             {
-                if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+
+                foreach (JProperty trackInfo in websocketInfoGPMDP.Queue[queueLoc])
                 {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
-                }
-                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
-                {
-                    songInfo = trackInfo.First.ToString();
+                    if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
+                    else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                    {
+                        songInfo = trackInfo.First.ToString();
+                    }
                 }
             }
-
+            else
+            {
+                if (type == QueueInfoType.Duration || type == QueueInfoType.PlayCount || type == QueueInfoType.Index)
+                {
+                    songInfo = "0";
+                }
+                else
+                {
+                    songInfo = "";
+                }
+            }
             return songInfo;
         }
 
@@ -1548,15 +1562,6 @@ namespace GPMDPPlugin
                     return lastKnownThemeColor;
                 case MeasureInfoType.Queue:
                     int readLoc = lastKnownQueueLocation + myQueueLocationToRead;
-
-                    if(readLoc < 0)
-                    {
-                        readLoc = 0;
-                    }
-                    else if(readLoc >= websocketInfoGPMDP.Queue.Count)
-                    {
-                        readLoc = websocketInfoGPMDP.Queue.Count - 1;
-                    }
 
                     if (myQueueInfoType == QueueInfoType.Duration)
                     {

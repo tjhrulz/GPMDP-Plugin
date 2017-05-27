@@ -6,13 +6,13 @@ Included in this repo is a example skin that shows how to use every measure and 
 
 - Standard media information (title, artist, album, cover, position, duration, progress)
 - Standard media controls (play, pause, forward/rewind, shuffle, rewind, volume)
-- Queue & lyrics support
+- Full Queue & lyrics support
 - Rating support (thumbs up/thumbs down)
 - Theming support (fetch colors from GPMDP themes)
 - Automatic authentification to GPMDP
 
 ### Future additions:
-- Dynamically sized queue so you can go more than 10 into the past or future as well as performance improvements when no skin is using the queue
+- Performance improvements when not using queue, add support for accessing and setting songs in queue in a non relative fashion 
 
 ## Measure types:
 
@@ -35,11 +35,17 @@ Included in this repo is a example skin that shows how to use every measure and 
   
 - `Position, Duration`
 
-  String of how far into the song or how long the song is, formated MM:SS.
+  String of how far into the song or how long the song is, formated MM:SS. Position has a MaxValue of duration
+  
+  **Attributes:**  
+  DisableLeadingZero - If set to 1 strings will be formatted as M:SS 
   
 - `Progress`
 
   Double of how far into the song you are as a percentage. To clarify that number is formated ##.##### and has a predefined max of 100.00.
+  
+  **Attributes:**  
+  AsDecimal - If set to 1 changes scale of progress from 0-100 to 0-1, also changes MaxValue to 1 
 
 - `Repeat`
 
@@ -60,15 +66,15 @@ Included in this repo is a example skin that shows how to use every measure and 
 - `Lyrics`
 
   String of the lyrics of the song.
-  **Note:** While downloading the lyrics or if there are none know this string will be empty. Thus this changes twice on any song with lyrics and only once on a song without lyrics.
+  **Note:** While downloading the lyrics or if there are none known this string will be empty. Thus this changes twice on any song with lyrics and only once on a song without lyrics.
   
 - `Queue`
 
   String of an info type from a location in the relative queue.
   
   **Attributes:**  
-  QueueLocation - An integer between -10 and 10 that is the song relative to the current song you want.   
-  QueueType - A string that is either Title, Artist, Album, AlbumArt, Duration, PlayCount, or Index.
+  QueueLocation - An integer that is the song relative to the current song you want. Now queue length is dynamic so similar to before if the queue was not long enough if you try to access a location not in the queue you will get either "" "00:00" or "0" depending on the info type. So QueueLocation=-1 will give you info from the last song.  
+  QueueType - A string that is either Title, Artist, Album, AlbumArt, Duration, PlayCount, or Index. **Note** duration accepts same flags as normal
   
 - `themetype`
 
@@ -99,12 +105,11 @@ Included in this repo is a example skin that shows how to use every measure and 
 - `SetVolume ###`
 
   Where ### is a Integer beween 0-100, add + or - in front to set the volume relatively.
-  **Note** this and Progress just started supporting double's instead of int, if you need an int or are having issues contact me.
   
 - `Previous`, `PlayPause`, `Next`
 
   Self explanitory.
-  **Note:** Previous set the song back to the start before going back to the previous song, PlayPause is a toggle and there is not currently a play or pause that just does that if it is requested in the future I could add this but GPMDP does not support it.
+  **Note:** Previous sets the song back to the start before going back to the previous song, PlayPause is a toggle and there is not currently a play or pause that just does that if it is requested in the future I could hack together a way to add this but GPMDP does not support it.
   
 - `Repeat`
 
@@ -121,6 +126,10 @@ Included in this repo is a example skin that shows how to use every measure and 
 - `SetRating #`
 
   when # is an integer, -1 is thumbs down, 0 is no rating, 1 is thumbs up.
+    
+- `SetSong #`
+
+  when # is an integer, sets what song to play in the current queue. So if # was 5 it will play the song 5 songs from now or if # is -2 it will play the song 2 songs ago. **Note** if you try to set a song outside the range of the queue it will clamp to the first or last song in the queue.
   
 - `OpenPlayer`, `ClosePlayer` and `TogglePlayer`
   

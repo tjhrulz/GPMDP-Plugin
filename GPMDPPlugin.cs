@@ -1257,9 +1257,16 @@ namespace GPMDPPlugin
 
                 case "progress":
                     InfoType = MeasureInfoType.Progress;
-                    maxValue = 100.0;
                     asDecimal = api.ReadInt("AsDecimal", 0);
 
+                    if (asDecimal == 1)
+                    {
+                        maxValue = 1.0;
+                    }
+                    else
+                    {
+                        maxValue = 100.0;
+                    }
                     break;
 
                 case "rating":

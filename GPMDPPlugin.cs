@@ -88,6 +88,8 @@ namespace GPMDPPlugin
             //public string ThemeColor { get; set; }
             public List<JToken> Queue { get; set; }
         }
+
+        //Possible info types the measure can be
         enum MeasureInfoType
         {
             Artist,
@@ -112,6 +114,10 @@ namespace GPMDPPlugin
             ThemeColor,
             Queue
         }
+        //Info type of the current measure
+        private MeasureInfoType InfoType;
+
+        //Possible infotypes queue info can be
         enum QueueInfoType
         {
             Artist = 0,
@@ -127,43 +133,51 @@ namespace GPMDPPlugin
             ArtistID = 10,
             ArtistImage = 11,
         }
-
-        //Info and player type of the measure
-        private MeasureInfoType InfoType;
-
-        //Info for queue measures, these are specific to a measure and 
+        //Queue info type and location to read it from for current measure
         private int myQueueLocationToRead = 0;
         private QueueInfoType myQueueInfoType = QueueInfoType.Title;
 
         //These variables, enums, and functions are all related to support for GPMDP
         public static WebSocket ws;
+        //Version the plugin was built around, should be no breaking issues until version 2.x.x
         private const String supportedAPIVersion = "1.1.0";
 
+        //Latest info from the websocket
         private static musicInfo websocketInfoGPMDP = new musicInfo();
+        //Not stored in websocket so each measure can have their own, if normal cover is null it is replaced with this later on
         private string defaultCoverLocation = "";
+        //Fallback location to download coverart to
         private static string coverOutputLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png";
+        //Default theme state and color for GPMDP
         private static int lastKnownThemeType = 0;
         private static string lastKnownThemeColor = "222, 79, 44";
 
+        //Flags related to Prgoress, Position, and Duration
         private int asDecimal = 0;
         private int disableLeadingZero = 0;
 
+        //For setting queue locations relatively/finding current song faster
         private static int lastKnownQueueLocation = 0;
+        //Threads related to updating queue
         private static Thread queueUpdateThread;
         private static Thread queueLocUpdateThread;
 
+        //For reading and setting authcode, flow is a little different now that it is read from GPMDP settings file but the old code is still in just in case
         private static string authcode = "\0";
         private static string rainmeterFileSettingsLocation = "";
         private static bool sentInitialAuthcode = false;
 
+        //So networking never happens on UI thread the creation and reconnection of websockets are handled on a different thread
         private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
         private static Thread GPMReconnectThread = new Thread(Measure.isGPMDPWebsocketConnected);
+
+        //Store how long its been since last attempt
         private static int GPMReconnectTimer;
+        //Time between reconnect attempts in ms
         private const int timeBetweenReconnectAttempts = 1000;
 
-        //private static List<JObject> queueSongsFromGet = new List<JObject>();
-
-        //The channel names that are handled in the OnMessage for the GPMDP websocket
+        //The channel names that are handled in the OnMessage for the GPMDP websocket, to add a new one add it here first
+        //Theme and results are not in this due to the way they are handled
         enum GPMInfoSupported
         {
             //Note this list does not include 2 theme support channels
@@ -212,7 +226,7 @@ namespace GPMDPPlugin
                 }
             }
         }
-        //Setup the websocket for GPMDP
+        //Setup the websocket for GPMDP, you can find code relating to updating music info in the onMessage here
         public static void GPMDPWebsocketCreator()
         {
             if (ws == null)
@@ -560,8 +574,55 @@ namespace GPMDPPlugin
             }
         }
 
+        //For downloading the image, called in a thread in the onMessage for the websocket
+        public static void GetImageFromUrl(string url, string filePath)
+        {
+            try
+            {
+                // Create http request
+                HttpWebRequest httpWebRequest = (HttpWebRequest)HttpWebRequest.Create(url);
+                using (HttpWebResponse httpWebReponse = (HttpWebResponse)httpWebRequest.GetResponse())
+                {
+
+                    // Read as stream
+                    using (Stream stream = httpWebReponse.GetResponseStream())
+                    {
+                        Byte[] buffer = ReadStream(stream);
+                        // Make sure the path folder exists
+                        System.IO.Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin");
+                        // Write stream to file
+                        File.WriteAllBytes(filePath, buffer);
+                    }
+                }
+                // Change back to cover image
+                //coverDownloaded = true;
+                websocketInfoGPMDP.Cover = filePath;
+                websocketInfoGPMDP.CoverWebAddress = url;
+            }
+            catch (Exception e)
+            {
+                API.Log(API.LogType.Error, "Unable to download album art to: " + coverOutputLocation);
+                Console.WriteLine(e);
+            }
+        }
+        private static byte[] ReadStream(Stream input)
+        {
+            byte[] buffer = new byte[1024];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                int read;
+                while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    ms.Write(buffer, 0, read);
+                }
+                return ms.ToArray();
+            }
+        }
+
+
         //These functions are related to elevating the GPMDP websocket to have remote status
         //Call sendGPMDPRemoteRequest to have GPMDP generate a 4 digit keycode, then getGPMDPAuthCode once you have recieved the code, and send authcode once GPMDP's websocket has sent you the perminate code
+        //Should be mostly unused now see next group of functions for new automatic method
         private static void sendGPMDPRemoteRequest()
         {
             if (ws != null && ws.ReadyState == WebSocketState.Open)
@@ -902,7 +963,6 @@ namespace GPMDPPlugin
             volumeString += "}";
             ws.SendAsync(volumeString, null);
         }
-
         //UNUSED, turns out you can not do a manual request to get genre. Shelved until GPMDP supports it which they have no plans to. Also can not be used to get index or id
         private static void GPMDPGetExtraSongInfo()
         {
@@ -914,9 +974,7 @@ namespace GPMDPPlugin
             playPauseString += "}";
             ws.SendAsync(playPauseString, null);
         }
-
-        //TODO Finish this
-        private static void GPMDPQueuePlayTrack(int trackLoc)
+        private static void GPMDPSetTrack(int trackLoc)
         {
             if (websocketInfoGPMDP.Queue.Count > trackLoc)
             {
@@ -934,53 +992,7 @@ namespace GPMDPPlugin
             }
         }
 
-
-        //For downloading the image from the internet
-        public static void GetImageFromUrl(string url, string filePath)
-        {
-            try
-            {
-                // Create http request
-                HttpWebRequest httpWebRequest = (HttpWebRequest)HttpWebRequest.Create(url);
-                using (HttpWebResponse httpWebReponse = (HttpWebResponse)httpWebRequest.GetResponse())
-                {
-
-                    // Read as stream
-                    using (Stream stream = httpWebReponse.GetResponseStream())
-                    {
-                        Byte[] buffer = ReadStream(stream);
-                        // Make sure the path folder exists
-                        System.IO.Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin");
-                        // Write stream to file
-                        File.WriteAllBytes(filePath, buffer);
-                    }
-                }
-                // Change back to cover image
-                //coverDownloaded = true;
-                websocketInfoGPMDP.Cover = filePath;
-                websocketInfoGPMDP.CoverWebAddress = url;
-            }
-            catch (Exception e)
-            {
-                API.Log(API.LogType.Error, "Unable to download album art to: " + coverOutputLocation);
-                Console.WriteLine(e);
-            }
-        }
-        private static byte[] ReadStream(Stream input)
-        {
-            byte[] buffer = new byte[1024];
-            using (MemoryStream ms = new MemoryStream())
-            {
-                int read;
-                while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                }
-                return ms.ToArray();
-            }
-        }
-
-        //For updating the queue displayed to the user
+        //For updating the queue displayed to the user with new info
         private static void updateQueueInfo(JToken queueInfo)
         {
             websocketInfoGPMDP.Queue.Clear();
@@ -1004,6 +1016,8 @@ namespace GPMDPPlugin
             //    lastKnownQueueLocation = 0;
             //}
         }
+        //For updating where we are at in the queue when the queue has not changed
+        //TODO Nag GPMDP devs to make it so I can identify current song in a less intensive way
         private static void updateQueueLoc()
         {
             if (queueUpdateThread.IsAlive)
@@ -1102,6 +1116,8 @@ namespace GPMDPPlugin
 
         }
 
+        //For interfacing with the Websocketinfo's queue, makes it so I dont have to keep two different queues.
+        //TODO make this better
         private static string getSongInfoFromQueue(int queueLoc, QueueInfoType type)
         {
             string songInfo = "";
@@ -1205,8 +1221,131 @@ namespace GPMDPPlugin
             }
         }
 
-        internal virtual void Dispose()
+        internal void ExecuteBang(string args)
         {
+            string bang = args.ToLowerInvariant();
+            if (bang.Equals("playpause"))
+            {
+                GPMDPPlayPause();
+            }
+            else if (bang.Equals("next"))
+            {
+                GPMDPForward();
+            }
+            else if (bang.Equals("previous"))
+            {
+                GPMDPPrevious();
+            }
+            else if (bang.Equals("repeat"))
+            {
+                GPMDPToggleRepeat();
+            }
+            else if (bang.Equals("shuffle"))
+            {
+                GPMDPToggleShuffle();
+            }
+            else if (bang.Equals("togglethumbsup"))
+            {
+                GPMDPToggleThumbsUp();
+            }
+            else if (bang.Equals("togglethumbsdown"))
+            {
+                GPMDPToggleThumbsDown();
+            }
+            else if (bang.Contains("setrating"))
+            {
+                try
+                {
+                    int rating = Convert.ToInt16(args.Substring(args.LastIndexOf(" ")));
+                    GPMDPSetRating(rating);
+                }
+                catch (Exception e)
+                {
+                    API.Log(API.LogType.Error, "Unable to convert the end of SetRating bang " + args.Substring(args.ToLower().LastIndexOf("setrating")) + " to a number");
+                    API.Log(API.LogType.Debug, e.ToString());
+                }
+            }
+            else if (bang.Contains("setposition"))
+            {
+                String percent = args.Substring(args.LastIndexOf(" "));
+                GPMDPSetPosition(percent);
+            }
+            else if (bang.Contains("setvolume"))
+            {
+                String volume = args.Substring(args.LastIndexOf(" "));
+                GPMDPSetVolume(volume);
+            }
+            else if (bang.Equals("openplayer"))
+            {
+                Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
+            }
+            else if (bang.Equals("closeplayer"))
+            {
+                foreach (var process in Process.GetProcessesByName("Google Play Music Desktop Player"))
+                {
+                    process.Kill();
+                }
+            }
+            else if (bang.Equals("toggleplayer"))
+            {
+                Process[] GPMDPProcesses = Process.GetProcessesByName("Google Play Music Desktop Player");
+
+                if (GPMDPProcesses.Length > 0)
+                {
+                    foreach (var process in GPMDPProcesses)
+                    {
+                        process.Kill();
+                    }
+                }
+                else
+                {
+                    Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
+                }
+            }
+            else if (bang.Contains("setsong"))
+            {
+                try
+                {
+                    int songLoc = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
+
+                    //If it is set to relative mode then add last known queue location
+                    if (args.Substring(args.LastIndexOf(" ")).Contains("+") || args.Substring(args.LastIndexOf(" ")).Contains("-"))
+                    {
+                        songLoc += lastKnownQueueLocation;
+                    }
+
+                    //Sanity checks
+                    if (songLoc < 0)
+                    {
+                        songLoc = 0;
+                    }
+                    else if (songLoc >= websocketInfoGPMDP.Queue.Count)
+                    {
+                        songLoc = websocketInfoGPMDP.Queue.Count - 1;
+                    }
+
+                    //TODO Fix songLoc to be relative and cap at extremes
+                    GPMDPSetTrack(songLoc);
+                }
+                catch (Exception e)
+                {
+                    API.Log(API.LogType.Error, "Unable to convert setSong argument to integer from command:" + args);
+                    API.Log(API.LogType.Debug, e.ToString());
+                }
+            }
+            //else if (bang.Contains("setSongAbsolute"))
+            //{
+            //    String songLoc = args.Substring(args.LastIndexOf(" "));
+            //}
+            else if (bang.Contains("key"))
+            {
+                //Get the last 4 chars of the keycode, this should ensure that we always get it even when bang is a little off
+                getGPMDPAuthCode(args.Substring(args.Length - 4, 4));
+            }
+            else
+            {
+                API.Log(API.LogType.Error, "GPMDPPlugin.dll: Invalid bang " + args);
+            }
         }
 
         internal virtual void Reload(Rainmeter.API api, ref double maxValue)
@@ -1356,133 +1495,6 @@ namespace GPMDPPlugin
                 char[] authchar = new char[36];
                 GetPrivateProfileString("GPMDPPlugin", "AuthCode", "", authchar, 37, rainmeterFileSettingsLocation);
                 authcode = new String(authchar);
-            }
-        }
-
-        internal void ExecuteBang(string args)
-        {
-            string bang = args.ToLowerInvariant();
-            if (bang.Equals("playpause"))
-            {
-                GPMDPPlayPause();
-            }
-            else if (bang.Equals("next"))
-            {
-                GPMDPForward();
-            }
-            else if (bang.Equals("previous"))
-            {
-                GPMDPPrevious();
-            }
-            else if (bang.Equals("repeat"))
-            {
-                GPMDPToggleRepeat();
-            }
-            else if (bang.Equals("shuffle"))
-            {
-                GPMDPToggleShuffle();
-            }
-            else if (bang.Equals("togglethumbsup"))
-            {
-                GPMDPToggleThumbsUp();
-            }
-            else if (bang.Equals("togglethumbsdown"))
-            {
-                GPMDPToggleThumbsDown();
-            }
-            else if (bang.Contains("setrating"))
-            {
-                try
-                {
-                    int rating = Convert.ToInt16(args.Substring(args.LastIndexOf(" ")));
-                    GPMDPSetRating(rating);
-                }
-                catch (Exception e)
-                {
-                    API.Log(API.LogType.Error, "Unable to convert the end of SetRating bang " + args.Substring(args.ToLower().LastIndexOf("setrating")) + " to a number");
-                    API.Log(API.LogType.Debug, e.ToString());
-                }
-            }
-            else if (bang.Contains("setposition"))
-            {
-                String percent = args.Substring(args.LastIndexOf(" "));
-                GPMDPSetPosition(percent);
-            }
-            else if (bang.Contains("setvolume"))
-            {
-                String volume = args.Substring(args.LastIndexOf(" "));
-                GPMDPSetVolume(volume);
-            }
-            else if (bang.Equals("openplayer"))
-            {
-                Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
-            }
-            else if (bang.Equals("closeplayer"))
-            {
-                foreach (var process in Process.GetProcessesByName("Google Play Music Desktop Player"))
-                {
-                    process.Kill();
-                }
-            }
-            else if (bang.Equals("toggleplayer"))
-            {
-                Process[] GPMDPProcesses = Process.GetProcessesByName("Google Play Music Desktop Player");
-
-                if (GPMDPProcesses.Length > 0)
-                {
-                    foreach (var process in GPMDPProcesses)
-                    {
-                        process.Kill();
-                    }
-                }
-                else
-                {
-                    Process.Start(Environment.GetEnvironmentVariable("LocalAppData") + "\\GPMDP_3\\update.exe", "-processStart \"Google Play Music Desktop Player.exe\"");
-                }
-            }
-            else if (bang.Contains("setsong"))
-            {
-                try
-                {
-                    int songLoc = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
-
-                    //If it is set to relative mode then add last known queue location
-                    if(args.Substring(args.LastIndexOf(" ")).Contains("+") || args.Substring(args.LastIndexOf(" ")).Contains("-"))
-                    {
-                        songLoc += lastKnownQueueLocation;
-                    }
-
-                    //Sanity checks
-                    if(songLoc < 0)
-                    {
-                        songLoc = 0;
-                    }
-                    else if(songLoc >= websocketInfoGPMDP.Queue.Count)
-                    {
-                        songLoc = websocketInfoGPMDP.Queue.Count - 1;
-                    }
-
-                    //TODO Fix songLoc to be relative and cap at extremes
-                    GPMDPQueuePlayTrack(songLoc);
-                }
-                catch (Exception e)
-                {
-                    API.Log(API.LogType.Error, "Unable to convert setSong argument to integer from command:" + args);
-                    API.Log(API.LogType.Debug, e.ToString());
-                }
-            }
-            //else if (bang.Contains("setSongAbsolute"))
-            //{
-            //    String songLoc = args.Substring(args.LastIndexOf(" "));
-            //}
-            else if (bang.Contains("key"))
-            {
-                //Get the last 4 chars of the keycode, this should ensure that we always get it even when bang is a little off
-                getGPMDPAuthCode(args.Substring(args.Length - 4, 4));
-            }
-            else
-            {
-                API.Log(API.LogType.Error, "GPMDPPlugin.dll: Invalid bang " + args);
             }
         }
 

@@ -47,17 +47,21 @@ namespace GPMDPPlugin
                 //ThemeColor = "222, 79, 44";
 
                 Queue = new List<JToken>();
-               
-               //This loop populates queue with 21 peices of information
-               //This will be interpreted 0-9 as last 10 songs, 10 is current, 11-20 is next 10
-               //TODO Make how many songs are kept in each direction dynamic
-               for (int i = 0; i <= 20; i++)
-               {
-                    //TODO Fill with legit property names
-                    JToken blankInfo = new JObject();
 
-                    Queue.Add(blankInfo);
-               }
+                //This loop populates the websocket queue with null
+                JObject blankInfo = new JObject();
+
+                foreach (QueueInfoType type in Enum.GetValues(typeof(QueueInfoType)))
+                {
+                    JProperty info = new JProperty(type.ToString(), "");
+
+                    if (type == QueueInfoType.Duration || type == QueueInfoType.PlayCount || type == QueueInfoType.Index)
+                    {
+                        info = new JProperty(type.ToString(), "0");
+                    }
+                    blankInfo.Add(info);
+                }
+                Queue.Add(blankInfo);
             }
             public string Artist { get; set; }
             public string Album { get; set; }
@@ -144,10 +148,9 @@ namespace GPMDPPlugin
         private int asDecimal = 0;
         private int disableLeadingZero = 0;
 
-        private static List<JToken> queueInfoList = new List<JToken>();
         private static int lastKnownQueueLocation = 0;
         private static Thread queueUpdateThread;
-        private static Thread relativeQueueUpdateThread;
+        private static Thread queueLocUpdateThread;
 
         private static string authcode = "\0";
         private static string rainmeterFileSettingsLocation = "";
@@ -220,13 +223,13 @@ namespace GPMDPPlugin
                 ws.OnMessage += (sender, d) =>
                 {
                     //Get the location of what type of info this is, which is formatted as :"%%%%%%",
-                    String type = d.Data.Substring(d.Data.IndexOf(":") +2, d.Data.IndexOf(",") - d.Data.IndexOf(":")-3);
+                    String type = d.Data.Substring(d.Data.IndexOf(":") + 2, d.Data.IndexOf(",") - d.Data.IndexOf(":") - 3);
                     bool acceptedType = false;
                     //API.Log(API.LogType.Notice, "type:" + type);
 
                     foreach (GPMInfoSupported currType in Enum.GetValues(typeof(GPMInfoSupported)))
                     {
-                        if(currType.ToString().CompareTo(type.ToLower()) == 0)
+                        if (currType.ToString().CompareTo(type.ToLower()) == 0)
                         {
                             acceptedType = true;
                         }
@@ -305,15 +308,29 @@ namespace GPMDPPlugin
                                     }
                                     else if (trackInfo.Name.ToString().ToLower().CompareTo("artist") == 0)
                                     {
-                                        websocketInfoGPMDP.Artist = trackInfo.First.ToString();
+                                        if (trackInfo.First.ToString().ToLower().CompareTo("unknown artist") != 0)
+                                        {
+                                            websocketInfoGPMDP.Artist = trackInfo.First.ToString();
+                                        }
+                                        else
+                                        {
+                                            websocketInfoGPMDP.Artist = "";
+                                        }
                                     }
                                     else if (trackInfo.Name.ToString().ToLower().CompareTo("album") == 0)
                                     {
-                                        websocketInfoGPMDP.Album = trackInfo.First.ToString();
+                                        if (trackInfo.First.ToString().ToLower().CompareTo("unknown album") != 0)
+                                        {
+                                            websocketInfoGPMDP.Album = trackInfo.First.ToString();
+                                        }
+                                        else
+                                        {
+                                            websocketInfoGPMDP.Album = "";
+                                        }
                                     }
                                     else if (trackInfo.First.ToString().Length != 0 && coverOutputLocation != null && trackInfo.Name.ToString().ToLower().CompareTo("albumart") == 0)
                                     {
-                                        if (!trackInfo.First.ToString().Contains("default") )
+                                        if (!trackInfo.First.ToString().Contains("default"))
                                         {
                                             websocketInfoGPMDP.Cover = null;
                                             Thread t = new Thread(() => GetImageFromUrl(trackInfo.First.ToString(), coverOutputLocation));
@@ -326,20 +343,20 @@ namespace GPMDPPlugin
                                         }
                                     }
                                 }
-                                //TODO Better handle both this and album art downloader being run again before the last one has finished
-                                if (relativeQueueUpdateThread != null)
+
+                                if (queueLocUpdateThread != null)
                                 {
-                                    relativeQueueUpdateThread.Abort();
-                                    relativeQueueUpdateThread.Join();
+                                    queueLocUpdateThread.Abort();
+                                    queueLocUpdateThread.Join();
                                 }
-                                relativeQueueUpdateThread = new Thread(() => updateRelativeQueue());
-                                relativeQueueUpdateThread.Start();
+                                queueLocUpdateThread = new Thread(() => updateQueueLoc());
+                                queueLocUpdateThread.Start();
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.playstate.ToString()) == 0 && acceptedVersion == true)
                             {
                                 try
-                                { 
-                                websocketInfoGPMDP.State = Convert.ToBoolean(currentValue) ? 1 : 2;
+                                {
+                                    websocketInfoGPMDP.State = Convert.ToBoolean(currentValue) ? 1 : 2;
                                 }
                                 catch (Exception e)
                                 {
@@ -419,7 +436,7 @@ namespace GPMDPPlugin
                                     API.Log(API.LogType.Error, "Unable to convert the song rating from GPMDP, report this issue on the GPMDP plugin github page");
                                     API.Log(API.LogType.Debug, e.ToString());
                                 }
-                            websocketInfoGPMDP.Rating = internalRating;
+                                websocketInfoGPMDP.Rating = internalRating;
                             }
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.lyrics.ToString()) == 0 && acceptedVersion == true)
                             {
@@ -428,7 +445,7 @@ namespace GPMDPPlugin
                             else if (currentProperty.ToString().ToLower().CompareTo(GPMInfoSupported.volume.ToString()) == 0 && acceptedVersion == true)
                             {
                                 try
-                                { 
+                                {
                                     websocketInfoGPMDP.Volume = Convert.ToInt16(currentValue);
                                 }
                                 catch (Exception e)
@@ -447,54 +464,32 @@ namespace GPMDPPlugin
                                 }
                                 queueUpdateThread = new Thread(() => updateQueueInfo(currentValue));
                                 queueUpdateThread.Start();
-                                //TODO Better handle both this and album art downloader being run again before the last one has finished
-                                if (relativeQueueUpdateThread != null)
-                                {
-                                    relativeQueueUpdateThread.Abort();
-                                    relativeQueueUpdateThread.Join();
-                                }
-                                relativeQueueUpdateThread = new Thread(() => updateRelativeQueue());
-                                relativeQueueUpdateThread.Start();
                             }
                         }
                     }
                     else if (type.CompareTo("result") == 0 && acceptedVersion == true)
                     {
-                        JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
-                        JArray arrayData = new JArray(data);
-                        //Debug.WriteLine(data.First.Next.ToString());
-                        API.Log(API.LogType.Notice, "data:" + data);
-
-                        if (data.First.Next.ToString() == "\"requestID\": 3")
-                        {
-                            //queueInfoList.Clear();
-                            //foreach (JToken token in arrayData)
-                            //{
-                            //    JToken currentProperty = token.First.Last;
-                            //    JToken currentValue = token.Last.Last;
-                            //
-                            //    Debug.WriteLine(currentProperty + ":" + currentValue);
-                            //
-                            //    foreach (JObject track in currentValue)
-                            //    {
-                            //        queueSongsFromGet.Add(track);
-                            //        //foreach (JProperty trackInfo in track.Children())
-                            //        //{
-                            //        //    JToken currentPropertyT = trackInfo.Name;
-                            //        //    JToken currentValueT = trackInfo.First;
-                            //        //
-                            //        //
-                            //        //    //API.Log(API.LogType.Notice, "prop:" + currentPropertyT);
-                            //        //    //API.Log(API.LogType.Notice, "value:" + currentValueT);
-                            //        //    API.Log(API.LogType.Notice, currentPropertyT + ":" + currentValueT);
-                            //        //}
-                            //    }
-                            //
-                            //}
-                        }
-                        //API.Log(API.LogType.Notice, "data:" + d.Data);
+                        //JObject data = JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(d.Data);
+                        //JArray arrayData = new JArray(data);
+                        //
+                        //if (data.First.Next.ToString() == "\"requestID\": 1")
+                        //{
+                        //    foreach (JToken innerData in arrayData)
+                        //    {
+                        //        foreach (JToken info in innerData)
+                        //        {
+                        //            if (info.ToString().Contains("return"))
+                        //            {
+                        //                foreach (JToken songInfo in info.Next.Children())
+                        //                {
+                        //                    lastKnownQueueLocation = (int)(songInfo["index"]) - 1;
+                        //                }
+                        //            }
+                        //        }
+                        //    }
+                        //}
                     }
-                    else if(type.Contains("theme"))
+                    else if (type.Contains("theme"))
                     {
                         JObject data = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(d.Data);
                         JArray arrayData = new JArray(data);
@@ -897,8 +892,8 @@ namespace GPMDPPlugin
                 API.Log(API.LogType.Debug, e.ToString());
             }
 
-            if (volumeToSet > 100) { volumeToSet = 100;  }
-            else if(volumeToSet < 0) { volumeToSet = 0; }
+            if (volumeToSet > 100) { volumeToSet = 100; }
+            else if (volumeToSet < 0) { volumeToSet = 0; }
 
             String volumeString = "{\n";
             volumeString += "\"namespace\": \"volume\",\n";
@@ -908,7 +903,7 @@ namespace GPMDPPlugin
             ws.SendAsync(volumeString, null);
         }
 
-        //UNUSED, turns out you can not do a manual request to get genre. Shelved until GPMDP supports it which they have no plans to
+        //UNUSED, turns out you can not do a manual request to get genre. Shelved until GPMDP supports it which they have no plans to. Also can not be used to get index or id
         private static void GPMDPGetExtraSongInfo()
         {
             //TODO change the requestID from being a constant to using an internal ID system.
@@ -919,34 +914,23 @@ namespace GPMDPPlugin
             playPauseString += "}";
             ws.SendAsync(playPauseString, null);
         }
-        
-        private static void GPMDPGetQueueTracks()
-        {
-            //TODO change the requestID from being a constant to using an internal ID system.
-            String playPauseString = "{\n";
-            playPauseString += "\"namespace\": \"queue\",\n";
-            playPauseString += "\"method\": \"getTracks\",\n";
-            playPauseString += "\"requestID\": " + 3 + "\n";
-            playPauseString += "}";
-            ws.SendAsync(playPauseString, null);
-        }
 
         //TODO Finish this
         private static void GPMDPQueuePlayTrack(int trackLoc)
         {
-            if (queueInfoList.Count > trackLoc)
+            if (websocketInfoGPMDP.Queue.Count > trackLoc)
             {
                 //GPMDPGetQueueTracks();
 
                 //TODO change the requestID from being a constant to using an internal ID system.
-                //TODO Use objects for command strings instead of this trash, it was okay before when it was just a few hacky lines now its borderline unreadable
-                String playPauseString = "{\n";
-                playPauseString += "\"namespace\": \"queue\",\n";
-                playPauseString += "\"method\": \"playTrack\",\n";
-                playPauseString += "\"arguments\": [\n" + queueInfoList[trackLoc] + "\n],\n";
-                playPauseString += "\"requestID\": " + 2 + "\n";
-                playPauseString += "}";
-                ws.SendAsync(playPauseString, null);
+                //TODO Use objects for command strings instead of this trash, it was okay before when it was just a few hacky lines now its borderline unreadable Edit: Better now but still should probably be rewritten
+                String queuePlaytrackString = "{\n";
+                queuePlaytrackString += "\"namespace\": \"queue\",\n";
+                queuePlaytrackString += "\"method\": \"playTrack\",\n";
+                queuePlaytrackString += "\"arguments\": [\n" + websocketInfoGPMDP.Queue[trackLoc] + "\n],\n";
+                queuePlaytrackString += "\"requestID\": " + 2 + "\n";
+                queuePlaytrackString += "}";
+                ws.SendAsync(queuePlaytrackString, null);
             }
         }
 
@@ -999,90 +983,179 @@ namespace GPMDPPlugin
         //For updating the queue displayed to the user
         private static void updateQueueInfo(JToken queueInfo)
         {
-            queueInfoList.Clear();
-            lastKnownQueueLocation = 0;
+            websocketInfoGPMDP.Queue.Clear();
+            //lastKnownQueueLocation = -1;
 
             //API.Log(API.LogType.Notice, "queue:" + currentValue);
             foreach (JToken track in queueInfo)
             {
-                string[] songInfo = new string[Enum.GetNames(typeof(QueueInfoType)).Length];
-                foreach (JProperty trackInfo in track)
+                //TODO Check this code in edge cases since at least AlbumArt is not passed if it is the default cover
+                if(track["title"].ToString() == websocketInfoGPMDP.Title && track["artist"].ToString() == websocketInfoGPMDP.Artist && track["album"].ToString() == websocketInfoGPMDP.Album)
                 {
-                    if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Artist.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.Artist] = trackInfo.First.ToString();
-                        if(songInfo[(int)QueueInfoType.Artist].Length == 0)
-                        {
-                            //songInfo[(int)QueueInfoType.Artist] = "Unknown Artist";
-                        }
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Album.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.Album] = trackInfo.First.ToString();
-                        if (songInfo[(int)QueueInfoType.Album].Length == 0)
-                        {
-                            //songInfo[(int)QueueInfoType.Album] = "Unknown Album";
-                        }
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Title.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.Title] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.AlbumArt.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.AlbumArt] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Duration.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.Duration] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.PlayCount.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.PlayCount] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.Index.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.Index] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.ID.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.ID] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.AlbumArtist.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.AlbumArtist] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.AlbumID.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.AlbumID] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.ArtistID.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.ArtistID] = trackInfo.First.ToString();
-                    }
-                    else if (trackInfo.Name.ToString().ToLower().CompareTo(QueueInfoType.ArtistImage.ToString().ToLower()) == 0)
-                    {
-                        songInfo[(int)QueueInfoType.ArtistImage] = trackInfo.First.ToString();
-                    }
-                    //else
-                    //{
-                    //    API.Log(API.LogType.Notice, "Unsupported queueu info:" + trackInfo.Name.ToString());
-                    //}
+                    lastKnownQueueLocation = (int)(track["index"]) - 1;
                 }
-                queueInfoList.Add(track);
+
+                websocketInfoGPMDP.Queue.Add(track);
             }
+
+            //if(lastKnownQueueLocation == -1)
+            //{
+            //    API.Log(API.LogType.Error, "GPMDP was unable to locate current song in queue");
+            //    lastKnownQueueLocation = 0;
+            //}
         }
-        private static void updateRelativeQueue()
+        private static void updateQueueLoc()
         {
             if (queueUpdateThread.IsAlive)
             {
                 queueUpdateThread.Join();
             }
-            if (queueInfoList.Count > 0)
+
+
+            if (websocketInfoGPMDP.Queue.Count > 0)
             {
-                GPMDPGetExtraSongInfo();
+                bool atBeginning = false;
+                bool atEnd = false;
+                bool foundMatch = false;
+                int currLoc = lastKnownQueueLocation;
+                int increment = 1;
+
+                while (!(atBeginning && atEnd) && !foundMatch)
+                {
+                    if (!atEnd && !atBeginning)
+                    {
+                        JToken track = websocketInfoGPMDP.Queue[currLoc];
+
+                        if (track["title"].ToString() == websocketInfoGPMDP.Title && track["artist"].ToString() == websocketInfoGPMDP.Artist && track["album"].ToString() == websocketInfoGPMDP.Album)
+                        {
+                            lastKnownQueueLocation = (int)(track["index"]) - 1;
+                            foundMatch = true;
+                        }
+
+                        currLoc += increment;
+                        increment *= -1;
+
+                        if(increment > 0)
+                        {
+                            increment++;
+                        }
+                        else
+                        {
+                            increment--;
+                        }
+
+                        if (currLoc >= websocketInfoGPMDP.Queue.Count)
+                        {
+                            atEnd = true;
+                            currLoc += increment;
+                        }
+                        if (currLoc < 0)
+                        {
+                            atBeginning = true;
+                            currLoc += increment;
+                        }
+                    }
+                    else if (!atEnd)
+                    {
+                        JToken track = websocketInfoGPMDP.Queue[currLoc];
+
+                        if (track["title"].ToString() == websocketInfoGPMDP.Title && track["artist"].ToString() == websocketInfoGPMDP.Artist && track["album"].ToString() == websocketInfoGPMDP.Album)
+                        {
+                            lastKnownQueueLocation = (int)(track["index"]) - 1;
+                            foundMatch = true;
+                        }
+
+                        currLoc++;
+                        if(currLoc >= websocketInfoGPMDP.Queue.Count)
+                        {
+                            atEnd = true;
+                        }
+                    }
+                    else if (!atBeginning)
+                    {
+                        JToken track = websocketInfoGPMDP.Queue[currLoc];
+
+                        if (track["title"].ToString() == websocketInfoGPMDP.Title && track["artist"].ToString() == websocketInfoGPMDP.Artist && track["album"].ToString() == websocketInfoGPMDP.Album)
+                        {
+                            lastKnownQueueLocation = (int)(track["index"]) - 1;
+                            foundMatch = true;
+                        }
+
+                        currLoc--;
+                        if (currLoc < 0)
+                        {
+                            atBeginning = true;
+                        }
+                    }
+                }
+
+                if(!foundMatch)
+                {
+                    API.Log(API.LogType.Error, "GPMDP was unable to locate current song in queue");
+                }
             }
+
         }
+
+        private static string getSongInfoFromQueue(int queueLoc, QueueInfoType type)
+        {
+            string songInfo = "";
+
+            foreach (JProperty trackInfo in websocketInfoGPMDP.Queue[queueLoc])
+            {
+                if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+                else if (trackInfo.Name.ToString().ToLower().CompareTo(type.ToString().ToLower()) == 0)
+                {
+                    songInfo = trackInfo.First.ToString();
+                }
+            }
+
+            return songInfo;
+        }
+
         //To be used for reading and writing values from the rainmeter settings file
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         static extern int GetPrivateProfileString(string section, string key, string defaultValue,
@@ -1164,7 +1237,7 @@ namespace GPMDPPlugin
                 case "duration":
                     InfoType = MeasureInfoType.Duration;
                     disableLeadingZero = api.ReadInt("DisableLeadingZero", 0);
-                    
+
                     break;
 
                 case "position":
@@ -1177,7 +1250,7 @@ namespace GPMDPPlugin
                     InfoType = MeasureInfoType.Progress;
                     maxValue = 100.0;
                     asDecimal = api.ReadInt("AsDecimal", 0);
-                    
+
                     break;
 
                 case "rating":
@@ -1228,21 +1301,21 @@ namespace GPMDPPlugin
                     disableLeadingZero = api.ReadInt("DisableLeadingZero", 0);
 
                     try
-                    { 
+                    {
                         myQueueLocationToRead = Convert.ToInt16(queueLoc);
                     }
                     catch (Exception e)
                     {
-                        API.Log(API.LogType.Error, "Unable to convert the queue location "+ queueLoc +" to an integer, assuming 0");
+                        API.Log(API.LogType.Error, "Unable to convert the queue location " + queueLoc + " to an integer, assuming current song");
                         API.Log(API.LogType.Debug, e.ToString());
                         myQueueLocationToRead = 0;
                     }
 
                     string queueType = api.ReadString("QueueType", "").ToLower();
 
-                    foreach(QueueInfoType currType in Enum.GetValues(typeof(QueueInfoType)))
+                    foreach (QueueInfoType currType in Enum.GetValues(typeof(QueueInfoType)))
                     {
-                        if(queueType.CompareTo(currType.ToString().ToLower()) == 0)
+                        if (queueType.CompareTo(currType.ToString().ToLower()) == 0)
                         {
                             myQueueInfoType = currType;
                         }
@@ -1334,7 +1407,7 @@ namespace GPMDPPlugin
             {
                 Process[] GPMDPProcesses = Process.GetProcessesByName("Google Play Music Desktop Player");
 
-                if(GPMDPProcesses.Length > 0)
+                if (GPMDPProcesses.Length > 0)
                 {
                     foreach (var process in GPMDPProcesses)
                     {
@@ -1350,7 +1423,16 @@ namespace GPMDPPlugin
             {
                 try
                 {
-                    int songLoc = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
+                    int songLoc = Convert.ToInt32(args.Substring(args.LastIndexOf(" "))) + lastKnownQueueLocation;
+
+                    if(songLoc < 0)
+                    {
+                        songLoc = 0;
+                    }
+                    else if(songLoc >= websocketInfoGPMDP.Queue.Count)
+                    {
+                        songLoc = websocketInfoGPMDP.Queue.Count - 1;
+                    }
 
                     //TODO Fix songLoc to be relative and cap at extremes
                     GPMDPQueuePlayTrack(songLoc);
@@ -1398,7 +1480,7 @@ namespace GPMDPPlugin
                 case MeasureInfoType.Volume:
                     return websocketInfoGPMDP.Volume;
                 case MeasureInfoType.Progress:
-                    if(asDecimal == 1)
+                    if (asDecimal == 1)
                     {
                         return websocketInfoGPMDP.Progress / 100.0;
                     }
@@ -1465,16 +1547,26 @@ namespace GPMDPPlugin
                 case MeasureInfoType.ThemeColor:
                     return lastKnownThemeColor;
                 case MeasureInfoType.Queue:
-                    //Add ten to it so locations 0-9 map to -10 through -1, 0 maps to 10, and 1-10 map to 11-21
+                    int readLoc = lastKnownQueueLocation + myQueueLocationToRead;
+
+                    if(readLoc < 0)
+                    {
+                        readLoc = 0;
+                    }
+                    else if(readLoc >= websocketInfoGPMDP.Queue.Count)
+                    {
+                        readLoc = websocketInfoGPMDP.Queue.Count - 1;
+                    }
+
                     if (myQueueInfoType == QueueInfoType.Duration)
                     {
                         try
                         {
-                            int trackSecondsQueue = Convert.ToInt32(websocketInfoGPMDP.Queue[myQueueLocationToRead + 10][(int)myQueueInfoType]) / 1000;
+                            int trackSecondsQueue = Convert.ToInt32(getSongInfoFromQueue(readLoc, myQueueInfoType)) / 1000;
 
                             int trackMinutesQueue = trackSecondsQueue / 60;
                             trackSecondsQueue = trackSecondsQueue % 60;
-                            
+
                             if (disableLeadingZero == 0)
                             {
                                 return trackMinutesQueue.ToString().PadLeft(2, '0') + ":" + trackSecondsQueue.ToString().PadLeft(2, '0');
@@ -1487,7 +1579,7 @@ namespace GPMDPPlugin
                             API.Log(API.LogType.Debug, e.ToString());
                         }
                     }
-                    return websocketInfoGPMDP.Queue[myQueueLocationToRead + 10].ToString();//[(int)myQueueInfoType];
+                    return getSongInfoFromQueue(readLoc, myQueueInfoType);
 
                 //These values are integers returned in update
                 case MeasureInfoType.Repeat:

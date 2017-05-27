@@ -1020,6 +1020,11 @@ namespace GPMDPPlugin
                 int currLoc = lastKnownQueueLocation;
                 int increment = 1;
 
+                if(currLoc >= websocketInfoGPMDP.Queue.Count)
+                {
+                    currLoc = websocketInfoGPMDP.Queue.Count - 1;
+                }
+
                 while (!(atBeginning && atEnd) && !foundMatch)
                 {
                     if (!atEnd && !atBeginning)

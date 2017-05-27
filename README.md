@@ -4,8 +4,8 @@ Included in this repo is a example skin that shows how to use every measure and 
 
 ### Current state:
 
-- Standart media information (title, artist, album, cover, position, duration, progress)
-- Standart media controls (play, pause, forward/rewind, shuffle, rewind, volume)
+- Standard media information (title, artist, album, cover, position, duration, progress)
+- Standard media controls (play, pause, forward/rewind, shuffle, rewind, volume)
 - Queue & lyrics support
 - Rating support (thumbs up/thumbs down)
 - Theming support (fetch colors from GPMDP themes)

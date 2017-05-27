@@ -1432,8 +1432,15 @@ namespace GPMDPPlugin
             {
                 try
                 {
-                    int songLoc = Convert.ToInt32(args.Substring(args.LastIndexOf(" "))) + lastKnownQueueLocation;
+                    int songLoc = Convert.ToInt32(args.Substring(args.LastIndexOf(" ")));
 
+                    //If it is set to relative mode then add last known queue location
+                    if(args.Substring(args.LastIndexOf(" ")).Contains("+") || args.Substring(args.LastIndexOf(" ")).Contains("-"))
+                    {
+                        songLoc += lastKnownQueueLocation;
+                    }
+
+                    //Sanity checks
                     if(songLoc < 0)
                     {
                         songLoc = 0;

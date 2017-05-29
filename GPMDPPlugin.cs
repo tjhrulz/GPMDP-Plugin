@@ -155,6 +155,7 @@ namespace GPMDPPlugin
         //Flags related to Prgoress, Position, and Duration
         private int asDecimal = 0;
         private int disableLeadingZero = 0;
+        private int includeMS = 0;
 
         //For setting queue locations relatively/finding current song faster
         private static int lastKnownQueueLocation = 0;
@@ -1390,12 +1391,14 @@ namespace GPMDPPlugin
                 case "duration":
                     InfoType = MeasureInfoType.Duration;
                     disableLeadingZero = api.ReadInt("DisableLeadingZero", 0);
+                    includeMS = api.ReadInt("IncludeMS", 0);
 
                     break;
 
                 case "position":
                     InfoType = MeasureInfoType.Position;
                     disableLeadingZero = api.ReadInt("DisableLeadingZero", 0);
+                    includeMS = api.ReadInt("IncludeMS", 0);
 
                     break;
 
@@ -1530,8 +1533,16 @@ namespace GPMDPPlugin
                 case MeasureInfoType.ThemeType:
                     return lastKnownThemeType;
                 case MeasureInfoType.Duration:
+                    if(includeMS == 1)
+                    {
+                        return (double)websocketInfoGPMDP.DurationInms / 1000.0;
+                    }
                     return Math.Floor(((double)websocketInfoGPMDP.DurationInms / 1000));
                 case MeasureInfoType.Position:
+                    if (includeMS == 1)
+                    {
+                        return (double)websocketInfoGPMDP.PositionInms / 1000.0;
+                    }
                     return Math.Floor(((double)websocketInfoGPMDP.PositionInms / 1000));
             }
 

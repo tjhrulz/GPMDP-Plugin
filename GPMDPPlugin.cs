@@ -589,8 +589,11 @@ namespace GPMDPPlugin
                     using (Stream stream = httpWebReponse.GetResponseStream())
                     {
                         Byte[] buffer = ReadStream(stream);
-                        // Make sure the path folder exists
-                        System.IO.Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin");
+                        if (coverOutputLocation == Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin/cover.png")
+                        {
+                            // Make sure the path folder exists if using it
+                            System.IO.Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/Rainmeter/GPMDPPlugin");
+                        }
                         // Write stream to file
                         File.WriteAllBytes(filePath, buffer);
                     }
@@ -1381,7 +1384,11 @@ namespace GPMDPPlugin
                 case "cover":
                     InfoType = MeasureInfoType.Cover;
                     defaultCoverLocation = api.ReadPath("DefaultPath", "");
-                    coverOutputLocation = api.ReadPath("CoverPath", "");
+                    string temp = api.ReadPath("CoverPath", null);
+                    if (temp.Length > 0)
+                    {
+                        coverOutputLocation = temp;
+                    }
                     break;
 
                 case "coverwebaddress":

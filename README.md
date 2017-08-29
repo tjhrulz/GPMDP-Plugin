@@ -40,7 +40,8 @@ Included in this repo is a example skin that shows how to use every measure and 
   String of how far into the song or how long the song is, formated MM:SS.
   
   **Attributes:**  
-  DisableLeadingZero - If set to 1 strings will be formatted as M:SS 
+  DisableLeadingZero - If set to 1 strings will be formatted as M:SS
+  IncludeMS - If enabled any decimal context will include milliseconds added after the decimal place
   
 - `Progress`
 

@@ -14,6 +14,8 @@ Included in this repo is a example skin that shows how to use every measure and 
 ### Future additions:
 - Performance improvements when not using queue, add support for accessing songs in queue in a non relative fashion 
 
+#### If you would like you can donate to support the plugin [here](https://www.paypal.me/tjhrulz)
+
 ## Measure types:
 
 - `Title, Artist, Album`

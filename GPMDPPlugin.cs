@@ -170,7 +170,7 @@ namespace GPMDPPlugin
 
         //So networking never happens on UI thread the creation and reconnection of websockets are handled on a different thread
         private static Thread GPMInitThread = new Thread(Measure.GPMDPWebsocketCreator);
-        private static Thread GPMReconnectThread = new Thread(Measure.isGPMDPWebsocketConnected);
+        private static Thread GPMReconnectThread;
 
         //Store how long its been since last attempt
         private static int GPMReconnectTimer;
@@ -195,38 +195,6 @@ namespace GPMDPPlugin
             queue
         }
 
-        //Check if the GPMDP websocket is connected and if it is not connect
-        private static void isGPMDPWebsocketConnected()
-        {
-            if (ws != null)
-            {
-                if (websocketInfoGPMDP.Status == -1 || websocketInfoGPMDP.Status == 0)
-                {
-                    int currentTicks = Environment.TickCount;
-                    if (currentTicks > GPMReconnectTimer + timeBetweenReconnectAttempts || (currentTicks < 0 && GPMReconnectTimer > 0))
-                    {
-                        GPMReconnectTimer = currentTicks;
-                        if (Process.GetProcessesByName("Google Play Music Desktop Player").Length > 0)
-                        {
-                            ws.Connect();
-                        }
-                    }
-                }
-                else if (sentInitialAuthcode == false)
-                {
-                    sentInitialAuthcode = true;
-
-                    if (authcode.Length > 30 && !authcode.Contains("\0"))
-                    {
-                        sendGPMDPAuthCode(authcode);
-                    }
-                    else
-                    {
-                        sendGPMDPRemoteRequest();
-                    }
-                }
-            }
-        }
         //Setup the websocket for GPMDP, you can find code relating to updating music info in the onMessage here
         public static void GPMDPWebsocketCreator()
         {
@@ -1511,10 +1479,47 @@ namespace GPMDPPlugin
         internal virtual double Update()
         {
 
-            if (GPMReconnectThread.ThreadState == System.Threading.ThreadState.Stopped || GPMReconnectThread.ThreadState == System.Threading.ThreadState.Unstarted)
+            if (websocketInfoGPMDP.Status != 2 && (GPMReconnectThread == null ||  GPMReconnectThread.ThreadState == System.Threading.ThreadState.Stopped || GPMReconnectThread.ThreadState == System.Threading.ThreadState.Unstarted))
             {
-                GPMReconnectThread = new Thread(Measure.isGPMDPWebsocketConnected);
-                GPMReconnectThread.Start();
+                //Check if the GPMDP websocket is connected and if it is not connect
+                if (ws != null)
+                {
+                    //Do normal websocket connection
+                    if (websocketInfoGPMDP.Status == -1 || websocketInfoGPMDP.Status == 0)
+                    {
+                        GPMReconnectThread = new Thread(() =>
+                        {
+                            int currentTicks = Environment.TickCount;
+                            if (currentTicks > GPMReconnectTimer + timeBetweenReconnectAttempts || (currentTicks < 0 && GPMReconnectTimer > 0))
+                            {
+                                GPMReconnectTimer = currentTicks;
+                                if (Process.GetProcessesByName("Google Play Music Desktop Player").Length > 0)
+                                {
+                                    ws.Connect();
+                                }
+                            }
+                        });
+                        GPMReconnectThread.Start();
+                    }
+                    //Do initial connection steps
+                    else if (sentInitialAuthcode == false)
+                    {
+                        GPMReconnectThread = new Thread(() =>
+                        {
+                            sentInitialAuthcode = true;
+
+                            if (authcode.Length > 30 && !authcode.Contains("\0"))
+                            {
+                                sendGPMDPAuthCode(authcode);
+                            }
+                            else
+                            {
+                                sendGPMDPRemoteRequest();
+                            }
+                        });
+                        GPMReconnectThread.Start();
+                    }
+                }
             }
 
             switch (InfoType)

@@ -1,8 +1,12 @@
 # Google Play Music Desktop Player for Rainmeter Plugin
-A rainmeter plugin that adds support for the music info and playback controls from [Google Play Music Desktop Player](https://www.googleplaymusicdesktopplayer.com/).
-Included in this repo is a example skin that shows how to use every measure and bang as well as a more fleshed out skin to show the possibilities of this plugin.
+A rainmeter plugin that adds support for the music info and playback controls from [Google Play Music Desktop Player](https://www.googleplaymusicdesktopplayer.com/).  
+Included in this repo is an example skin that shows how to use every measure and bang as well as a more fleshed out skin to show the possibilities of this plugin.  
+**Note**: GPMDP currently has a bug with position being incorrectly reported to anything using its WebSocket API. If it is not fixed soon I will submit a patch myself.  
+
+#### If you would like to support this plugin and other plugins I make please check out my [patreon](https://www.patreon.com/tjhrulz)
 
 ### Current state:
+Feature complete - Focus is now on bug fixes and other small improvements. Focus has shifted to [WebNowPlaying](https://github.com/tjhrulz/WebNowPlaying) and a [unified NowPlaying](https://github.com/tjhrulz/UnifiedNowPlaying) plugin. 
 
 - Standard media information (title, artist, album, cover, position, duration, progress)
 - Standard media controls (play, pause, forward/rewind, shuffle, rewind, volume)
@@ -12,9 +16,8 @@ Included in this repo is a example skin that shows how to use every measure and 
 - Automatic authentification to GPMDP
 
 ### Future additions:
-- Performance improvements when not using queue, add support for accessing songs in queue in a non relative fashion 
-
-#### If you would like you can donate to support the plugin [here](https://www.paypal.me/tjhrulz)
+- Performance improvements when not using queue
+- Storing image in temp when no location is declared instead of in your Rainmeter directory,
 
 ## Measure types: (Declared with PlayerInfo=)
 
@@ -142,6 +145,3 @@ Included in this repo is a example skin that shows how to use every measure and 
 - `key ####` or `keycode ####` - **Deprecated, authentication is now automatic unless settings file can not be found**
 
   Where #### is the 4 digit authentication code for GPMDP used to elavate connection status from 1 to 2, **Note:** this only has to be done once per machine and then it is saved in the rainmeter.data file. If connection status is 0 then GPMDP is not setup and doing this will do nothing. 
-
-## List of current bugs and oddities:
-Similar to the spotify plugin all measures share the same cover download location so do not use the absolute path to your cover location, however unlike spotify your default cover location will always be your one. See issue [here](https://github.com/tjhrulz/GPMDP-Plugin/issues/1) for more info.
